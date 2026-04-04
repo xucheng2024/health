@@ -279,7 +279,7 @@ export function HomePage() {
             <div className="grid lg:grid-cols-12 lg:items-stretch">
               <div className="relative order-1 aspect-video w-full min-h-0 lg:col-span-5 lg:aspect-auto lg:min-h-[400px] lg:h-full">
                 <CoverImage
-                  src="/images/who-we-are-clinic-healthtech.jpg"
+                  src="/images/who-we-are-clinic-healthtech.png"
                   alt=""
                   sizes="(max-width: 1023px) 100vw, 42vw"
                   priority
