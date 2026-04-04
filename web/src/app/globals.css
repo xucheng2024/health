@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #303030;
+  --brand: #003f73;
+  --surface-muted: #f4f6f9;
+  --border-subtle: rgb(226 232 240 / 0.85);
+  --shadow-card: 0 2px 24px -4px rgb(15 23 42 / 0.08);
+  --shadow-card-hover: 0 12px 40px -8px rgb(15 23 42 / 0.12);
+}
+
+/* Main / footer: keyboard focus matches brand */
+main a:focus-visible,
+footer a:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+/* Header on dark bar: light focus ring */
+header a:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 0.92);
+  outline-offset: 3px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-surface-muted: var(--surface-muted);
+  --font-sans: var(--font-metropolis), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  color: #ffffff;
+  background: #003f73;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-metropolis), ui-sans-serif, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+/* Keyboard / screen reader: jump past navigation */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 100;
+  border-radius: 0.375rem;
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--brand);
+  box-shadow: 0 4px 24px rgb(15 23 42 / 0.12);
+  transition: top 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}
+
+.skip-link:focus {
+  top: 1rem;
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.font-eg {
+  font-family: var(--font-eg), ui-sans-serif, sans-serif;
+}

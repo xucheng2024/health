@@ -1,0 +1,14 @@
+.vercel
+.DS_Store
+
+# Next.js app (web/)
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/.env*
+web/*.tsbuildinfo
+web/next-env.d.ts
+web/npm-debug.log*
+web/yarn-error.log*
+web/.pnpm-debug.log*
