@@ -12,8 +12,8 @@ const navLinkClass =
 
 export function SiteHeader() {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 h-[98px] border-b border-white/10 bg-[#003F73] shadow-[0_1px_0_rgb(0,0,0,0.06)]">
-      <div className="mx-auto flex h-full max-w-[1290px] items-center justify-between px-4 lg:px-6">
+    <header className="fixed inset-x-0 top-0 z-50 h-[var(--header-h)] border-b border-white/10 bg-[#003F73] shadow-[0_1px_0_rgb(0,0,0,0.06)]">
+      <div className="mx-auto flex h-full max-w-[1290px] flex-col justify-center gap-2 px-4 sm:flex-row sm:items-center sm:justify-between sm:gap-0 lg:px-6">
         <div className="flex min-w-0 items-center">
           <a
             href="#main-content"
@@ -29,12 +29,12 @@ export function SiteHeader() {
               priority
             />
           </a>
-          <p className="ml-4 max-w-42 border-l border-white/25 pl-4 text-[9px] font-light leading-snug tracking-[0.07em] text-white/90 sm:ml-5 sm:max-w-none sm:pl-5 sm:text-[11px] sm:leading-normal md:text-sm">
+          <p className="ml-3 max-w-40 border-l border-white/25 pl-3 text-[9px] font-light leading-snug tracking-[0.07em] text-white/90 sm:ml-5 sm:max-w-none sm:pl-5 sm:text-[11px] sm:leading-normal md:text-sm">
             When Health Meets Technology
           </p>
         </div>
         <nav
-          className="flex shrink-0 items-center justify-end gap-1 sm:gap-1"
+          className="flex w-full shrink-0 items-center justify-between gap-1 sm:w-auto sm:justify-end"
           aria-label="Primary"
         >
           {navItems.map(({ href, label }) => (

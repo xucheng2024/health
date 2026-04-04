@@ -11,6 +11,8 @@
   --shadow-card-hover: 0 14px 44px -8px rgb(15 23 42 / 0.14);
   /* Single content column width — cards and copy align to one vertical edge */
   --page-max: 920px;
+  /* Fixed header height for in-page anchors and main top padding */
+  --header-h: 128px;
 }
 
 /* Main / footer: keyboard focus matches brand */
@@ -41,6 +43,12 @@ header a:focus-visible {
 
 html {
   scroll-behavior: smooth;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --header-h: 98px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

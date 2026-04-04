@@ -254,18 +254,19 @@ function TechFeature({
 }
 
 export function HomePage() {
+  const anchorOffsetClass = "scroll-mt-[calc(var(--header-h)+12px)]";
   return (
     <>
       <SiteHeader />
       <main
         id="main-content"
-        className="bg-surface-muted pb-10 pt-[98px] sm:pb-14"
+        className="bg-surface-muted pb-10 pt-[var(--header-h)] sm:pb-14"
         tabIndex={-1}
       >
         <h1 className="sr-only">
           HealthOptix — When Health Meets Technology
         </h1>
-        <a id="who-we-are" className="invisible scroll-mt-[110px]" />
+        <div id="who-we-are" className={`invisible ${anchorOffsetClass}`} />
         <SectionTitle>Who we are</SectionTitle>
 
         {/* Who we are + Mission — single card, two stacked rows (image|text then text|image) */}
@@ -283,9 +284,7 @@ export function HomePage() {
               </div>
               <div className="order-2 flex flex-col justify-center space-y-6 px-6 py-10 sm:px-12 sm:py-12 lg:col-span-7">
                 <p className="max-w-prose text-left text-[18px] font-semibold leading-snug tracking-tight text-[#303030] sm:text-[22px]">
-                  HealthOptix is a Health System and
-                  <br />
-                  Solution provider.
+                  HealthOptix is a Health System and Solution provider.
                 </p>
                 <div>
                   <p className={blockHeading}>We design and apply</p>
@@ -296,9 +295,7 @@ export function HomePage() {
                   </ul>
                 </div>
                 <p className="max-w-prose text-left text-[16px] leading-relaxed text-[#303030]/90 sm:text-[18px]">
-                  across Health &amp; Wellness Providers,
-                  <br />
-                  Organisations, and Communities.
+                  across Health &amp; Wellness Providers, Organisations, and Communities.
                 </p>
               </div>
             </div>
@@ -334,7 +331,7 @@ export function HomePage() {
           </div>
         </section>
 
-        <div id="what-we-do" className={`scroll-mt-[110px] ${sectionStackGap}`}>
+        <div id="what-we-do" className={`${anchorOffsetClass} ${sectionStackGap}`}>
           <SectionTitle>What we do</SectionTitle>
         </div>
 
@@ -423,7 +420,7 @@ export function HomePage() {
           <div className="flex flex-1 justify-center">
             <a
               href="#workplace"
-              className="inline-flex min-w-30 items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="inline-flex w-full min-w-[7.5rem] items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               more
             </a>
@@ -431,7 +428,7 @@ export function HomePage() {
           <div className="flex flex-1 justify-center">
             <a
               href="#tech-enabled-solutions"
-              className="inline-flex min-w-30 items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="inline-flex w-full min-w-[7.5rem] items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               more
             </a>
@@ -439,7 +436,7 @@ export function HomePage() {
           <div className="flex flex-1 justify-center">
             <a
               href="#knowledge-training"
-              className="inline-flex min-w-30 items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="inline-flex w-full min-w-[7.5rem] items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               more
             </a>
@@ -449,7 +446,7 @@ export function HomePage() {
         {/* Workplace — Health Systems / MyClinic */}
         <section
           id="workplace"
-          className={`${shell} scroll-mt-[110px] ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
+          className={`${shell} ${anchorOffsetClass} ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
         >
           <h2 className={cardPrimaryTitle}>
             Health Systems
@@ -513,7 +510,7 @@ export function HomePage() {
         {/* HealthTech — separate card from Health Systems */}
         <section
           id="tech-enabled-solutions"
-          className={`${shell} scroll-mt-[110px] ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
+          className={`${shell} ${anchorOffsetClass} ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
         >
           <h2 className={cardPrimaryTitle}>
             HealthTech-Enabled Solutions at Workplace and Community
@@ -565,7 +562,7 @@ export function HomePage() {
         {/* Knowledge & Training */}
         <section
           id="knowledge-training"
-          className={`${shell} scroll-mt-[110px] ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
+          className={`${shell} ${anchorOffsetClass} ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
         >
           <h2 className={cardPrimaryTitle}>
             Knowledge &amp; Training
@@ -615,7 +612,7 @@ export function HomePage() {
         </section>
 
         {/* Contact footer */}
-        <a id="contact" className="invisible scroll-mt-[110px]" />
+        <div id="contact" className={`invisible ${anchorOffsetClass}`} />
         <footer className="mt-4 border-t border-slate-200/65 bg-linear-to-b from-white to-slate-100/35 pb-4 pt-14 sm:mt-6 sm:pt-16">
           <div className={`${shell} px-4 text-center sm:px-6`}>
             <p className="text-[clamp(1.2rem,2.8vw,1.5rem)] font-semibold leading-snug tracking-[0.14em] text-[#003F73] sm:text-[1.35rem] lg:text-[1.5rem]">
