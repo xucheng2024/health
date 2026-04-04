@@ -1,15 +1,11 @@
 {
   "name": "health",
   "private": true,
-  "description": "Monorepo root; Next.js app lives in ./web",
+  "description": "Monorepo root; Next.js app is the web workspace",
+  "workspaces": ["web"],
   "scripts": {
-    "build": "cd web && npm run build",
-    "dev": "cd web && npm run dev",
-    "lint": "cd web && npm run lint"
-  },
-  "dependencies": {
-    "next": "16.2.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "build": "npm run build -w web",
+    "dev": "npm run dev -w web",
+    "lint": "npm run lint -w web"
   }
 }
