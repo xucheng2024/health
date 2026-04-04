@@ -1,22 +1,47 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Icon } from "@phosphor-icons/react";
 import {
-  type LucideIcon,
-  BarChart3,
+  ArrowSquareOut,
   BookOpen,
   Calendar,
-  Check,
-  ExternalLink,
+  CaretCircleRight,
+  ChartBar,
+  CheckCircle,
+  Envelope,
   GraduationCap,
   Lightbulb,
-  Mail,
   MapPin,
   ThumbsUp,
   Users,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
 import { SiteHeader } from "./site-header";
 
-const shell = "mx-auto max-w-[1152px]";
+/** One primary column so section titles, cards, and CTAs share the same silhouette */
+const shell = "mx-auto w-full max-w-[var(--page-max)]";
+
+/** White surface: shared chrome for all elevated panels */
+const contentCard =
+  "overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-(--shadow-card) ring-1 ring-slate-900/4";
+
+/** Vertical gap between major stacked blocks (below a band title or between cards) */
+const sectionStackGap = "mt-10 sm:mt-12";
+
+/** Tier 1: Full-width band headings (Who we are / What we do) — neutral, largest band style */
+const sectionBandTitle =
+  "text-center text-[1.35rem] font-semibold leading-snug tracking-tight text-[#303030] text-balance sm:text-[1.75rem]";
+
+/** Tier 2: Primary title inside white cards (Health Systems, HealthTech, Knowledge & Training) */
+const cardPrimaryTitle =
+  "text-center text-[1.4rem] font-semibold leading-snug tracking-tight text-[#003F73] text-balance sm:text-[1.65rem] lg:text-[1.85rem]";
+
+/** Tier 3: Sub-heading inside a card (e.g. MyClinic System) */
+const cardSubsectionTitle =
+  "text-center text-[1.15rem] font-semibold leading-snug tracking-tight text-[#003F73] sm:text-[1.25rem]";
+
+/** Tier 2 (split layout): Mission — same visual weight as card primary, left-aligned */
+const missionTitle =
+  "text-left text-[1.375rem] font-semibold leading-snug tracking-tight text-[#003F73] sm:text-[1.625rem] lg:text-[1.75rem]";
 
 /** Long-form copy: readable measure + line height (left-aligned inside centered column) */
 const proseBody =
@@ -27,7 +52,7 @@ const sectionLead =
   "text-center text-[16px] font-medium leading-snug text-[#303030] sm:text-[17px]";
 const sectionLeadMuted =
   "text-center text-[15px] leading-relaxed text-[#303030]/75 sm:text-[16px]";
-/** Small caps label before lists (+ optional Lucide icon) */
+/** Small caps label before lists (+ optional Phosphor icon) */
 const listSectionLabelClass =
   "text-[13px] font-semibold uppercase tracking-[0.14em] text-[#003F73] sm:text-sm";
 
@@ -35,7 +60,7 @@ function ListSectionLabel({
   icon: Icon,
   children,
 }: {
-  icon: LucideIcon;
+  icon: Icon;
   children: React.ReactNode;
 }) {
   return (
@@ -43,24 +68,68 @@ function ListSectionLabel({
       className={`mt-10 flex max-w-prose items-center gap-2 text-left ${listSectionLabelClass}`}
     >
       <Icon
-        className="h-4 w-4 shrink-0 text-[#003F73] opacity-90"
+        className="h-4 w-4 shrink-0 text-[#003F73]"
+        weight="duotone"
         aria-hidden
-        strokeWidth={2}
       />
       <span>{children}</span>
     </p>
   );
 }
 
-function ListCheckRow({ children }: { children: React.ReactNode }) {
+/** List markers — vary by section so long pages are not all checkmarks */
+type ListMarker = "check" | "dot" | "chevron" | "line";
+
+function ListMarkerLead({ variant }: { variant: ListMarker }) {
+  switch (variant) {
+    case "check":
+      return (
+        <CheckCircle
+          className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[#003F73]"
+          weight="duotone"
+          aria-hidden
+        />
+      );
+    case "dot":
+      return (
+        <span
+          className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-[#003F73]"
+          aria-hidden
+        />
+      );
+    case "chevron":
+      return (
+        <CaretCircleRight
+          className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[#003F73]/70"
+          weight="duotone"
+          aria-hidden
+        />
+      );
+  }
+}
+
+function ListRow({
+  children,
+  marker = "check",
+}: {
+  children: React.ReactNode;
+  marker?: ListMarker;
+}) {
+  if (marker === "line") {
+    return (
+      <li className="relative pl-5 leading-relaxed text-[#303030]/95">
+        <span
+          className="absolute top-1 bottom-1 left-0 w-[3px] rounded-full bg-linear-to-b from-[#003F73]/55 via-[#003F73]/22 to-[#003F73]/8"
+          aria-hidden
+        />
+        {children}
+      </li>
+    );
+  }
   return (
     <li className="flex gap-3">
-      <Check
-        className="mt-0.5 h-4 w-4 shrink-0 text-[#003F73]"
-        aria-hidden
-        strokeWidth={2.25}
-      />
-      <span>{children}</span>
+      <ListMarkerLead variant={marker} />
+      <span className="min-w-0">{children}</span>
     </li>
   );
 }
@@ -103,15 +172,43 @@ function CoverImage({
   );
 }
 
+/** Section spotlight (MyClinic / HealthTech / Knowledge): compact 16:9, pre-sized WebP, low fetch priority. */
+const sectionSpotlightFrame =
+  "relative mx-auto mt-8 aspect-video w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100/50 shadow-sm ring-1 ring-slate-900/5 sm:mt-10";
+
+function SectionSpotlightImage({
+  src,
+  alt,
+  objectClassName = "object-cover object-center",
+}: {
+  src: string;
+  alt: string;
+  objectClassName?: string;
+}) {
+  return (
+    <div className={sectionSpotlightFrame}>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 672px"
+        quality={74}
+        fetchPriority="low"
+        className={objectClassName}
+      />
+    </div>
+  );
+}
+
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border-b border-slate-200/80 bg-linear-to-b from-white to-slate-50/60">
-      <div className={`${shell} px-4 py-11 sm:py-14`}>
-        <h2 className="text-center text-[1.35rem] font-semibold tracking-tight text-[#303030] text-balance sm:text-[1.75rem]">
+    <div className="border-b border-slate-200/55 bg-linear-to-b from-white via-slate-50/30 to-white">
+      <div className={`${shell} px-4 py-10 sm:px-6 sm:py-12`}>
+        <h2 className={sectionBandTitle}>
           {children}
         </h2>
         <div
-          className="mx-auto mt-5 h-[3px] w-12 rounded-full bg-[#003F73]"
+          className="mx-auto mt-4 h-px w-16 max-w-full bg-linear-to-r from-transparent via-[#003F73]/35 to-transparent sm:mt-5"
           aria-hidden
         />
       </div>
@@ -137,16 +234,15 @@ function TechFeature({
         {children}
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className="text-[16px] font-semibold tracking-tight text-[#003F73] sm:text-[17px]">
+        <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[18px]">
           {title}
         </h3>
         <ul className="mt-3 space-y-2 text-[14px] leading-relaxed text-[#303030]/95 sm:text-[15px]">
           {bullets.map((line) => (
-            <li key={line} className="flex gap-2">
-              <Check
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#003F73]"
+            <li key={line} className="flex gap-2.5">
+              <span
+                className="mt-[0.4rem] h-1 w-1 shrink-0 rounded-full bg-[#003F73]/55"
                 aria-hidden
-                strokeWidth={2.25}
               />
               <span>{line}</span>
             </li>
@@ -172,84 +268,81 @@ export function HomePage() {
         <a id="who-we-are" className="invisible scroll-mt-[110px]" />
         <SectionTitle>Who we are</SectionTitle>
 
-        {/* Who we are — narrower image (5/12) + text (7/12), matches Mission split inverted */}
-        <section className={`${shell} px-4 pb-14 pt-10 sm:px-6 lg:px-8`}>
-          <div className="grid overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5 lg:grid-cols-12 lg:items-stretch">
-            <div className="relative order-1 aspect-video w-full min-h-0 lg:col-span-5 lg:aspect-auto lg:min-h-[400px] lg:h-full">
-              <CoverImage
-                src="/images/who-we-are-clinic-healthtech.jpg"
-                alt=""
-                sizes="(max-width: 1023px) 100vw, 42vw"
-                priority
-                objectClassName="object-cover object-center"
-              />
-            </div>
-            <div className="order-2 flex flex-col justify-center space-y-6 px-6 py-10 sm:px-12 sm:py-12 lg:col-span-7">
-            <p className="max-w-prose text-left text-[18px] font-semibold leading-snug tracking-tight text-[#303030] sm:text-[22px]">
-              HealthOptix is a Health System and
-              <br />
-              Solution provider.
-            </p>
-            <div>
-            <p className={blockHeading}>
-              We design and apply
-            </p>
-            <ul className="mt-4 max-w-prose space-y-2.5 text-[16px] leading-relaxed text-[#303030] sm:text-[18px]">
-              <ListCheckRow>Integrated systems</ListCheckRow>
-              <ListCheckRow>Technology-enabled solutions</ListCheckRow>
-              <ListCheckRow>Knowledge programmes</ListCheckRow>
-            </ul>
-            </div>
-            <p className="max-w-prose text-left text-[16px] leading-relaxed text-[#303030]/90 sm:text-[18px]">
-              across Health &amp; Wellness Providers,
-              <br />
-              Organisations, and Communities.
-            </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Mission — text (5/12) + larger image (7/12); same 12-col system as Who we are */}
-        <section className={`${shell} px-4 pb-14 sm:px-6 lg:px-8`}>
-          <div className="grid overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5 lg:grid-cols-12 lg:items-stretch">
-            <div className="order-2 flex min-h-0 flex-col justify-center px-8 py-12 sm:px-12 sm:py-14 lg:order-1 lg:col-span-5 lg:justify-center lg:pl-12 lg:pr-8">
-              <h2 className="text-left text-[22px] font-semibold tracking-tight text-[#003F73] sm:text-[26px] lg:text-[28px]">
-                Mission
-              </h2>
-              <div className="mt-7 flex gap-4 sm:mt-8 sm:gap-5">
-                <Lightbulb
-                  className="mt-1 h-5 w-5 shrink-0 text-[#303030] sm:h-6 sm:w-6"
-                  aria-hidden
-                  strokeWidth={2}
+        {/* Who we are + Mission — single card, two stacked rows (image|text then text|image) */}
+        <section className={`${shell} px-4 pb-12 pt-8 sm:px-6 sm:pb-14 sm:pt-10`}>
+          <div className={contentCard}>
+            <div className="grid lg:grid-cols-12 lg:items-stretch">
+              <div className="relative order-1 aspect-video w-full min-h-0 lg:col-span-5 lg:aspect-auto lg:min-h-[400px] lg:h-full">
+                <CoverImage
+                  src="/images/who-we-are-clinic-healthtech.jpg"
+                  alt=""
+                  sizes="(max-width: 1023px) 100vw, 42vw"
+                  priority
+                  objectClassName="object-cover object-center"
                 />
-                <p className="max-w-md text-left text-[16px] leading-[1.85] text-[#303030]/92 sm:text-[17px]">
-                  Bring &apos;Knowledge, Tech, Insight, Imagination&apos; together
-                  to shape Health &amp; Wellbeing for our Community.
+              </div>
+              <div className="order-2 flex flex-col justify-center space-y-6 px-6 py-10 sm:px-12 sm:py-12 lg:col-span-7">
+                <p className="max-w-prose text-left text-[18px] font-semibold leading-snug tracking-tight text-[#303030] sm:text-[22px]">
+                  HealthOptix is a Health System and
+                  <br />
+                  Solution provider.
+                </p>
+                <div>
+                  <p className={blockHeading}>We design and apply</p>
+                  <ul className="mt-4 max-w-prose space-y-2.5 text-[16px] leading-relaxed text-[#303030] sm:text-[18px]">
+                    <ListRow marker="dot">Integrated systems</ListRow>
+                    <ListRow marker="dot">Technology-enabled solutions</ListRow>
+                    <ListRow marker="dot">Knowledge programmes</ListRow>
+                  </ul>
+                </div>
+                <p className="max-w-prose text-left text-[16px] leading-relaxed text-[#303030]/90 sm:text-[18px]">
+                  across Health &amp; Wellness Providers,
+                  <br />
+                  Organisations, and Communities.
                 </p>
               </div>
             </div>
-            <div className="relative order-1 flex min-h-[260px] items-center justify-center bg-slate-50/40 px-4 py-6 sm:min-h-[300px] sm:px-8 sm:py-10 lg:order-2 lg:col-span-7 lg:min-h-[min(480px,70vh)] lg:p-10">
-              <div className="relative aspect-[4/5] w-full max-w-[min(100%,420px)] lg:aspect-auto lg:max-h-[min(440px,52vh)] lg:max-w-none lg:h-[min(440px,52vh)] lg:w-full">
-                <CoverImage
-                  src="/images/shutterstock_1438511402.png"
-                  alt=""
-                  sizes="(max-width: 1023px) 90vw, 480px"
-                  objectClassName="object-contain object-center"
-                />
+
+            <div className="grid bg-slate-50/45 lg:grid-cols-12 lg:items-stretch">
+              <div className="order-2 flex min-h-0 flex-col justify-center px-8 py-12 sm:px-12 sm:py-14 lg:order-1 lg:col-span-5 lg:justify-center lg:pl-12 lg:pr-8">
+                <h2 className={missionTitle}>
+                  Mission
+                </h2>
+                <div className="mt-7 flex gap-4 sm:mt-8 sm:gap-5">
+                  <Lightbulb
+                    className="mt-1 h-5 w-5 shrink-0 text-[#303030] sm:h-6 sm:w-6"
+                    weight="duotone"
+                    aria-hidden
+                  />
+                  <p className="max-w-md text-left text-[16px] leading-[1.85] text-[#303030]/92 sm:text-[17px]">
+                    Bring &apos;Knowledge, Tech, Insight, Imagination&apos; together
+                    to shape Health &amp; Wellbeing for our Community.
+                  </p>
+                </div>
+              </div>
+              <div className="relative order-1 flex min-h-[260px] items-center justify-center bg-slate-50/25 px-4 py-6 sm:min-h-[300px] sm:px-8 sm:py-10 lg:order-2 lg:col-span-7 lg:min-h-[min(480px,70vh)] lg:bg-transparent lg:p-10">
+                <div className="relative aspect-[4/5] w-full max-w-[min(100%,420px)] lg:aspect-auto lg:max-h-[min(440px,52vh)] lg:max-w-none lg:h-[min(440px,52vh)] lg:w-full">
+                  <CoverImage
+                    src="/images/shutterstock_1438511402.png"
+                    alt=""
+                    sizes="(max-width: 1023px) 90vw, 480px"
+                    objectClassName="object-contain object-center"
+                  />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <div id="what-we-do" className="scroll-mt-[110px] mt-6 sm:mt-8">
+        <div id="what-we-do" className={`scroll-mt-[110px] ${sectionStackGap}`}>
           <SectionTitle>What we do</SectionTitle>
         </div>
 
         {/* What we do — image on top, copy below (three pillars); use <a> for reliable same-page hash scroll */}
-        <section className={`${shell} grid gap-6 px-4 pb-6 sm:grid-cols-3 sm:gap-5 sm:px-6 lg:px-8`}>
+        <section className={`${shell} grid gap-5 px-4 pb-2 pt-8 sm:grid-cols-3 sm:gap-5 sm:px-6 sm:pt-10 lg:px-8`}>
           <a
             href="#workplace"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-[#303030] shadow-sm ring-1 ring-slate-900/5 transition-[box-shadow,transform] duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-slate-900/10"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
           >
             <div className="relative aspect-3/2 w-full">
               <CoverImage
@@ -261,7 +354,7 @@ export function HomePage() {
               />
             </div>
             <div className="flex flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
-              <h3 className="text-[17px] font-semibold tracking-tight sm:text-[19px]">
+              <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
                 Health Systems
               </h3>
               <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
@@ -273,7 +366,7 @@ export function HomePage() {
           </a>
           <a
             href="#tech-enabled-solutions"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-[#303030] shadow-sm ring-1 ring-slate-900/5 transition-[box-shadow,transform] duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-slate-900/10"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
           >
             <div className="relative aspect-3/2 w-full">
               <CoverImage
@@ -285,7 +378,7 @@ export function HomePage() {
               />
             </div>
             <div className="flex flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
-              <h3 className="text-[17px] font-semibold tracking-tight sm:text-[19px]">
+              <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
                 <span className="block">Tech-Enabled Health</span>
                 <span className="block">Solutions</span>
               </h3>
@@ -300,7 +393,7 @@ export function HomePage() {
           </a>
           <a
             href="#knowledge-training"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-[#303030] shadow-sm ring-1 ring-slate-900/5 transition-[box-shadow,transform] duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-slate-900/10"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
           >
             <div className="relative aspect-3/2 w-full">
               <CoverImage
@@ -312,7 +405,7 @@ export function HomePage() {
               />
             </div>
             <div className="flex flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
-              <h3 className="text-[17px] font-semibold tracking-tight sm:text-[19px]">
+              <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
                 Knowledge &amp; Training
               </h3>
               <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
@@ -326,7 +419,7 @@ export function HomePage() {
           </a>
         </section>
 
-        <div className={`${shell} mt-2 flex flex-col justify-center gap-3 px-4 pb-12 sm:flex-row sm:gap-5 sm:px-6 lg:px-8`}>
+        <div className={`${shell} mt-4 flex flex-col justify-center gap-3 px-4 pb-10 sm:flex-row sm:gap-5 sm:px-6 sm:pb-12 lg:px-8`}>
           <div className="flex flex-1 justify-center">
             <a
               href="#workplace"
@@ -356,9 +449,9 @@ export function HomePage() {
         {/* Workplace — Health Systems / MyClinic */}
         <section
           id="workplace"
-          className="mx-auto mt-6 max-w-[920px] scroll-mt-[110px] rounded-2xl border border-slate-200/80 bg-white px-5 pb-14 pt-10 text-[#303030] shadow-sm ring-1 ring-slate-900/5 sm:mt-10 sm:px-10 sm:pt-12 sm:pb-16 lg:px-12"
+          className={`${shell} scroll-mt-[110px] ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
         >
-          <h2 className="text-center text-[1.4rem] font-semibold tracking-tight text-[#003F73] text-balance sm:text-[1.65rem] lg:text-[1.85rem]">
+          <h2 className={cardPrimaryTitle}>
             Health Systems
           </h2>
           <p className={`mt-4 ${sectionLead}`}>
@@ -370,7 +463,7 @@ export function HomePage() {
             business performance.
           </p>
 
-          <h3 className="mt-12 border-t border-slate-100 pt-10 text-center text-[1.15rem] font-semibold tracking-tight text-[#003F73] sm:text-[1.25rem]">
+          <h3 className={`mt-12 border-t border-slate-100 pt-10 ${cardSubsectionTitle}`}>
             MyClinic System
           </h3>
           <p className={`mt-4 ${sectionLeadMuted}`}>
@@ -378,24 +471,30 @@ export function HomePage() {
             wellness centres.
           </p>
 
+          <SectionSpotlightImage
+            src="/images/myclinic-saas-dashboard.webp"
+            alt="MyClinic clinic management dashboard on a laptop, with sidebar navigation and daily overview"
+            objectClassName="object-cover object-center"
+          />
+
           <ListSectionLabel icon={Users}>Suitable for</ListSectionLabel>
           <ul className="mt-4 max-w-prose space-y-3.5 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-5 text-[15px] leading-relaxed text-[#303030]/95 sm:px-5 sm:text-[16px]">
-            <ListCheckRow>
+            <ListRow marker="chevron">
               TCM, chiropractic, integrative or lifestyle medicine practices
-            </ListCheckRow>
-            <ListCheckRow>Aesthetic, preventive health centres</ListCheckRow>
-            <ListCheckRow>
+            </ListRow>
+            <ListRow marker="chevron">Aesthetic, preventive health centres</ListRow>
+            <ListRow marker="chevron">
               Physiotherapy, rehabilitation, and recovery providers
-            </ListCheckRow>
-            <ListCheckRow>Health screening providers</ListCheckRow>
-            <ListCheckRow>
+            </ListRow>
+            <ListRow marker="chevron">Health screening providers</ListRow>
+            <ListRow marker="chevron">
               Wellness providers, including studios and centres offering
               structured wellness services
-            </ListCheckRow>
-            <ListCheckRow>
+            </ListRow>
+            <ListRow marker="chevron">
               Growing practices seeking better efficiency, patient management,
               and scalability
-            </ListCheckRow>
+            </ListRow>
           </ul>
 
           <p className="mt-12 text-center">
@@ -406,7 +505,7 @@ export function HomePage() {
               className="inline-flex items-center gap-1.5 rounded-full border border-[#003F73]/20 bg-[#003F73]/6 px-5 py-2.5 text-[16px] font-semibold text-[#003F73] transition-colors duration-200 hover:border-[#003F73]/40 hover:bg-[#003F73]/10 sm:text-[17px]"
             >
               Explore MyClinic
-              <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
+              <ArrowSquareOut className="h-4 w-4 shrink-0" weight="bold" aria-hidden />
             </Link>
           </p>
         </section>
@@ -414,19 +513,25 @@ export function HomePage() {
         {/* HealthTech — separate card from Health Systems */}
         <section
           id="tech-enabled-solutions"
-          className="mx-auto mt-8 max-w-[920px] scroll-mt-[110px] rounded-2xl border border-slate-200/80 bg-white px-5 pb-14 pt-10 text-[#303030] shadow-sm ring-1 ring-slate-900/5 sm:mt-12 sm:px-10 sm:pt-12 sm:pb-16 lg:px-12"
+          className={`${shell} scroll-mt-[110px] ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
         >
-          <h2 className="text-center text-[1.15rem] font-semibold leading-snug tracking-tight text-[#003F73] text-balance sm:text-[1.35rem] lg:text-[1.45rem]">
+          <h2 className={cardPrimaryTitle}>
             HealthTech-Enabled Solutions at Workplace and Community
           </h2>
           <p className={`mt-4 ${sectionLead}`}>
             Applying technology to deliver health &amp; wellness solutions at
             scale.
           </p>
-          <p className="mx-auto mt-5 max-w-prose text-left text-[14px] leading-relaxed text-[#303030]/70 sm:text-[15px]">
+          <p className="mx-auto mt-5 max-w-prose text-center text-[14px] leading-relaxed text-[#303030]/70 sm:text-[15px]">
             This is a programme designed for Employee / Community Satisfactory
             &amp; Healthcare Cost Saving.
           </p>
+
+          <SectionSpotlightImage
+            src="/images/healthtech-workplace-consultation.webp"
+            alt="Health professional consulting with two people at a small table with a tablet in a bright modern office"
+            objectClassName="object-cover object-[50%_45%]"
+          />
 
           <div className="mx-auto mt-10 max-w-[640px] space-y-6 sm:space-y-7">
             <TechFeature
@@ -435,7 +540,7 @@ export function HomePage() {
                 "Flexible time slot, take any time according to your designated time period",
               ]}
             >
-              <Calendar className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              <Calendar className="h-6 w-6" weight="duotone" aria-hidden />
             </TechFeature>
             <TechFeature
               title="Better experience"
@@ -444,7 +549,7 @@ export function HomePage() {
                 "Cutting-edge European Health-tech",
               ]}
             >
-              <ThumbsUp className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              <ThumbsUp className="h-6 w-6" weight="duotone" aria-hidden />
             </TechFeature>
             <TechFeature
               title="Easily understandable visual data"
@@ -452,7 +557,7 @@ export function HomePage() {
                 "Identify risks from suboptimal health to disease stages",
               ]}
             >
-              <BarChart3 className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              <ChartBar className="h-6 w-6" weight="duotone" aria-hidden />
             </TechFeature>
           </div>
         </section>
@@ -460,9 +565,9 @@ export function HomePage() {
         {/* Knowledge & Training */}
         <section
           id="knowledge-training"
-          className="mx-auto mt-8 max-w-[920px] scroll-mt-[110px] rounded-2xl border border-slate-200/80 bg-white px-5 pb-14 pt-10 text-[#303030] shadow-sm ring-1 ring-slate-900/5 sm:mt-12 sm:px-10 sm:pt-12 sm:pb-16 lg:px-12"
+          className={`${shell} scroll-mt-[110px] ${sectionStackGap} ${contentCard} px-5 pb-14 pt-10 text-[#303030] sm:px-10 sm:pt-12 sm:pb-16 lg:px-12`}
         >
-          <h2 className="text-center text-[1.4rem] font-semibold tracking-tight text-[#003F73] text-balance sm:text-[1.65rem] lg:text-[1.85rem]">
+          <h2 className={cardPrimaryTitle}>
             Knowledge &amp; Training
           </h2>
           <p className={`mt-4 ${sectionLead}`}>
@@ -474,48 +579,54 @@ export function HomePage() {
             practical understanding and everyday use.
           </p>
 
+          <SectionSpotlightImage
+            src="/images/knowledge-training-presentation.webp"
+            alt="Presenter leading a professional training session in a modern meeting room with data on screen"
+            objectClassName="object-cover object-[50%_42%]"
+          />
+
           <ListSectionLabel icon={GraduationCap}>
             Our programmes focus on helping participants to
           </ListSectionLabel>
           <ul className="mt-4 max-w-prose space-y-2.5 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-5 text-[15px] leading-relaxed text-[#303030]/95 sm:px-5 sm:text-[16px]">
-            <ListCheckRow>
+            <ListRow marker="line">
               Apply healthtech into real-world settings and decision-making
-            </ListCheckRow>
-            <ListCheckRow>
+            </ListRow>
+            <ListRow marker="line">
               Integrate technology and data into health management and services
-            </ListCheckRow>
-            <ListCheckRow>
+            </ListRow>
+            <ListRow marker="line">
               Build practical capabilities in delivering health and wellbeing
               solutions
-            </ListCheckRow>
+            </ListRow>
           </ul>
 
           <ListSectionLabel icon={BookOpen}>Offerings include</ListSectionLabel>
           <ul className="mt-4 max-w-prose space-y-2.5 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-5 text-[15px] leading-relaxed text-[#303030]/95 sm:px-5 sm:text-[16px]">
-            <ListCheckRow>Professional training programmes</ListCheckRow>
-            <ListCheckRow>Health and wellbeing workshops</ListCheckRow>
-            <ListCheckRow>
+            <ListRow marker="check">Professional training programmes</ListRow>
+            <ListRow marker="check">Health and wellbeing workshops</ListRow>
+            <ListRow marker="check">
               Applied learning for organisations and individuals
-            </ListCheckRow>
-            <ListCheckRow>
+            </ListRow>
+            <ListRow marker="check">
               Customised programmes for workplaces and communities
-            </ListCheckRow>
+            </ListRow>
           </ul>
         </section>
 
         {/* Contact footer */}
         <a id="contact" className="invisible scroll-mt-[110px]" />
-        <footer className="border-t border-slate-200/80 bg-surface-muted pb-4 pt-16 sm:pt-20">
-          <div className="mx-auto max-w-[1290px] px-4 text-center sm:px-6">
-            <p className="text-[clamp(1.75rem,4.5vw,3rem)] font-bold leading-tight tracking-[0.12em] text-[#003F73]">
+        <footer className="mt-4 border-t border-slate-200/65 bg-linear-to-b from-white to-slate-100/35 pb-4 pt-14 sm:mt-6 sm:pt-16">
+          <div className={`${shell} px-4 text-center sm:px-6`}>
+            <p className="text-[clamp(1.2rem,2.8vw,1.5rem)] font-semibold leading-snug tracking-[0.14em] text-[#003F73] sm:text-[1.35rem] lg:text-[1.5rem]">
               CONTACT
             </p>
             <div className="mx-auto mt-10 max-w-[682px] sm:mt-12">
               <div className="flex items-start justify-center gap-3 text-[17px] leading-relaxed tracking-wide text-[#003F73] sm:text-[21px]">
                 <MapPin
                   className="mt-1 h-5 w-5 shrink-0 text-[#003F73]/85"
+                  weight="duotone"
                   aria-hidden
-                  strokeWidth={2}
                 />
                 <div className="space-y-1.5 text-left sm:space-y-2">
                   <p>
@@ -526,10 +637,10 @@ export function HomePage() {
                 </div>
               </div>
               <p className="mt-10 flex items-center justify-center gap-2 sm:mt-12">
-                <Mail
+                <Envelope
                   className="h-5 w-5 shrink-0 text-[#003F73]/85"
+                  weight="duotone"
                   aria-hidden
-                  strokeWidth={2}
                 />
                 <a
                   href="mailto:info@health-optix.com"

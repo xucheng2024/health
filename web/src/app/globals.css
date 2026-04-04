@@ -4,10 +4,13 @@
   --background: #ffffff;
   --foreground: #303030;
   --brand: #003f73;
-  --surface-muted: #f4f6f9;
+  /* Page canvas: white; cards rely slightly stronger shadow for depth */
+  --surface-muted: #ffffff;
   --border-subtle: rgb(226 232 240 / 0.85);
-  --shadow-card: 0 2px 24px -4px rgb(15 23 42 / 0.08);
-  --shadow-card-hover: 0 12px 40px -8px rgb(15 23 42 / 0.12);
+  --shadow-card: 0 2px 28px -4px rgb(15 23 42 / 0.1);
+  --shadow-card-hover: 0 14px 44px -8px rgb(15 23 42 / 0.14);
+  /* Single content column width — cards and copy align to one vertical edge */
+  --page-max: 920px;
 }
 
 /* Main / footer: keyboard focus matches brand */

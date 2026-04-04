@@ -1,5 +1,15 @@
 import Image from "next/image";
 
+const navItems = [
+  { href: "#who-we-are", label: "Who we are" },
+  { href: "#what-we-do", label: "What we do" },
+  { href: "#contact", label: "Contact" },
+] as const;
+
+/** One style for all primary nav links — size, weight, tracking, hit area */
+const navLinkClass =
+  "inline-flex min-h-[44px] items-center justify-center rounded-sm px-3 py-2 text-[13px] font-medium leading-none tracking-[0.14em] text-white/92 antialiased transition-[color,opacity] duration-200 hover:text-white sm:min-h-0 sm:px-2 sm:py-1.5 sm:text-sm sm:tracking-[0.16em] sm:hover:underline sm:underline-offset-[6px]";
+
 export function SiteHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 h-[98px] border-b border-white/10 bg-[#003F73] shadow-[0_1px_0_rgb(0,0,0,0.06)]">
@@ -24,27 +34,14 @@ export function SiteHeader() {
           </p>
         </div>
         <nav
-          className="flex flex-wrap items-center justify-end gap-4 text-[11px] font-medium tracking-[0.14em] text-white/95 sm:gap-8 sm:text-sm"
+          className="flex shrink-0 items-center justify-end gap-1 sm:gap-1"
           aria-label="Primary"
         >
-          <a
-            href="#who-we-are"
-            className="rounded-sm transition-[opacity,color] duration-200 hover:text-white sm:hover:underline"
-          >
-            Who we are
-          </a>
-          <a
-            href="#what-we-do"
-            className="rounded-sm transition-[opacity,color] duration-200 hover:text-white sm:hover:underline"
-          >
-            What we do
-          </a>
-          <a
-            href="#contact"
-            className="rounded-sm transition-[opacity,color] duration-200 hover:text-white sm:hover:underline"
-          >
-            Contact
-          </a>
+          {navItems.map(({ href, label }) => (
+            <a key={href} href={href} className={navLinkClass}>
+              {label}
+            </a>
+          ))}
         </nav>
       </div>
     </header>
