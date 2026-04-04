@@ -27,6 +27,9 @@ const contentCard =
 /** Vertical gap between major stacked blocks (below a band title or between cards) */
 const sectionStackGap = "mt-10 sm:mt-12";
 
+/** What we do — pillar cards share one image aspect so seams line up across the row */
+const pillarCardImageFrame = "relative aspect-3/2 w-full shrink-0";
+
 /** Tier 1: Full-width band headings (Who we are / What we do) — neutral, largest band style */
 const sectionBandTitle =
   "text-center text-[1.35rem] font-semibold leading-snug tracking-tight text-[#303030] text-balance sm:text-[1.75rem]";
@@ -43,10 +46,11 @@ const cardSubsectionTitle =
 const missionTitle =
   "text-left text-[1.375rem] font-semibold leading-snug tracking-tight text-[#003F73] sm:text-[1.625rem] lg:text-[1.75rem]";
 
-/** Long-form copy: readable measure + line height (left-aligned inside centered column) */
-const proseBody =
-  "max-w-prose text-left text-[15px] leading-[1.75] text-[#303030]/95 sm:text-[16px]";
-const proseBodyCenter = `${proseBody} mx-auto text-pretty`;
+/** Long-form copy: shared measure + line height (alignment applied per variant) */
+const proseBodyBase =
+  "max-w-prose text-[15px] leading-[1.75] text-[#303030]/95 sm:text-[16px]";
+/** Section intros under card titles */
+const proseBodyCenter = `${proseBodyBase} mx-auto text-pretty text-center`;
 /** Short lead under section titles */
 const sectionLead =
   "text-center text-[16px] font-medium leading-snug text-[#303030] sm:text-[17px]";
@@ -284,7 +288,8 @@ export function HomePage() {
               </div>
               <div className="order-2 flex flex-col justify-center space-y-6 px-6 py-10 sm:px-12 sm:py-12 lg:col-span-7">
                 <p className="max-w-prose text-left text-[18px] font-semibold leading-snug tracking-tight text-[#303030] sm:text-[22px]">
-                  HealthOptix is a Health System and Solution provider.
+                  <span className="text-[#003F73]">HealthOptix</span> is a Health
+                  System and Solution provider.
                 </p>
                 <div>
                   <p className={blockHeading}>We design and apply</p>
@@ -336,12 +341,12 @@ export function HomePage() {
         </div>
 
         {/* What we do — image on top, copy below (three pillars); use <a> for reliable same-page hash scroll */}
-        <section className={`${shell} grid gap-5 px-4 pb-2 pt-8 sm:grid-cols-3 sm:gap-5 sm:px-6 sm:pt-10 lg:px-8`}>
+        <section className={`${shell} grid gap-5 px-4 pb-10 pt-8 sm:grid-cols-3 sm:items-stretch sm:gap-5 sm:px-6 sm:pt-10 sm:pb-12 lg:px-8`}>
           <a
             href="#workplace"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
+            className="group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
           >
-            <div className="relative aspect-3/2 w-full">
+            <div className={pillarCardImageFrame}>
               <CoverImage
                 src="/images/what-we-do-health-systems.png"
                 alt=""
@@ -350,22 +355,29 @@ export function HomePage() {
                 pillarHover
               />
             </div>
-            <div className="flex flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
-              <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
-                Health Systems
-              </h3>
-              <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
-                Technology platforms for
-                <br />
-                healthcare operations
-              </p>
+            <div className="flex min-h-0 flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
+              <div>
+                <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
+                  Health Systems
+                </h3>
+                <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
+                  Technology platforms for
+                  <br />
+                  healthcare operations
+                </p>
+              </div>
+              <div className="mt-auto flex justify-center pt-5">
+                <span className="inline-flex w-full min-w-[7.5rem] shrink-0 items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100">
+                  more
+                </span>
+              </div>
             </div>
           </a>
           <a
             href="#tech-enabled-solutions"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
+            className="group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
           >
-            <div className="relative aspect-3/2 w-full">
+            <div className={pillarCardImageFrame}>
               <CoverImage
                 src="/images/customisedhealthprogramsforworkplaces.jpg"
                 alt=""
@@ -374,25 +386,32 @@ export function HomePage() {
                 pillarHover
               />
             </div>
-            <div className="flex flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
-              <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
-                <span className="block">Tech-Enabled Health</span>
-                <span className="block">Solutions</span>
-              </h3>
-              <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
-                Applying technology to
-                <br />
-                deliver health &amp; wellness
-                <br />
-                solutions at scale
-              </p>
+            <div className="flex min-h-0 flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
+              <div>
+                <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
+                  <span className="block">Tech-Enabled Health</span>
+                  <span className="block">Solutions</span>
+                </h3>
+                <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
+                  Applying technology to
+                  <br />
+                  deliver health &amp; wellness
+                  <br />
+                  solutions at scale
+                </p>
+              </div>
+              <div className="mt-auto flex justify-center pt-5">
+                <span className="inline-flex w-full min-w-[7.5rem] shrink-0 items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100">
+                  more
+                </span>
+              </div>
             </div>
           </a>
           <a
             href="#knowledge-training"
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
+            className="group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white text-[#303030] shadow-(--shadow-card) ring-1 ring-slate-900/4 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover) hover:ring-slate-900/8"
           >
-            <div className="relative aspect-3/2 w-full">
+            <div className={pillarCardImageFrame}>
               <CoverImage
                 src="/images/education-in-micronutrition_unsplash-u1552-fr.jpg"
                 alt=""
@@ -401,47 +420,27 @@ export function HomePage() {
                 pillarHover
               />
             </div>
-            <div className="flex flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
-              <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
-                Knowledge &amp; Training
-              </h3>
-              <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
-                Bridging knowledge,
-                <br />
-                practice, and real-life
-                <br />
-                application
-              </p>
+            <div className="flex min-h-0 flex-1 flex-col px-4 pb-5 pt-6 text-center sm:px-5">
+              <div>
+                <h3 className="text-[17px] font-semibold tracking-tight text-[#003F73] sm:text-[19px]">
+                  Knowledge &amp; Training
+                </h3>
+                <p className="mt-3 text-[14px] leading-relaxed text-[#303030]/90 sm:text-[15px]">
+                  Bridging knowledge,
+                  <br />
+                  practice, and real-life
+                  <br />
+                  application
+                </p>
+              </div>
+              <div className="mt-auto flex justify-center pt-5">
+                <span className="inline-flex w-full min-w-[7.5rem] shrink-0 items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100">
+                  more
+                </span>
+              </div>
             </div>
           </a>
         </section>
-
-        <div className={`${shell} mt-4 flex flex-col justify-center gap-3 px-4 pb-10 sm:flex-row sm:gap-5 sm:px-6 sm:pb-12 lg:px-8`}>
-          <div className="flex flex-1 justify-center">
-            <a
-              href="#workplace"
-              className="inline-flex w-full min-w-[7.5rem] items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100"
-            >
-              more
-            </a>
-          </div>
-          <div className="flex flex-1 justify-center">
-            <a
-              href="#tech-enabled-solutions"
-              className="inline-flex w-full min-w-[7.5rem] items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100"
-            >
-              more
-            </a>
-          </div>
-          <div className="flex flex-1 justify-center">
-            <a
-              href="#knowledge-training"
-              className="inline-flex w-full min-w-[7.5rem] items-center justify-center rounded-full border-2 border-[#003F73] bg-[#003F73] px-8 py-2.5 text-center text-[15px] font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white hover:text-[#003F73] active:scale-[0.98] sm:w-auto motion-reduce:transition-none motion-reduce:active:scale-100"
-            >
-              more
-            </a>
-          </div>
-        </div>
 
         {/* Workplace — Health Systems / MyClinic */}
         <section
