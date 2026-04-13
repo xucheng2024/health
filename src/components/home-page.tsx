@@ -279,11 +279,11 @@ export function HomePage() {
             <div className="grid lg:grid-cols-12 lg:items-stretch">
               <div className="relative order-1 aspect-video w-full min-h-0 lg:col-span-5 lg:aspect-auto lg:min-h-[400px] lg:h-full">
                 <CoverImage
-                  src="/images/who-we-are-clinic-healthtech.png"
+                  src="/images/who-we-are-tablet-mri-hero.jpg"
                   alt=""
                   sizes="(max-width: 1023px) 100vw, 42vw"
                   priority
-                  objectClassName="object-cover object-center"
+                  objectClassName="object-cover object-[75%_50%]"
                 />
               </div>
               <div className="order-2 flex flex-col justify-center space-y-6 px-6 py-10 sm:px-12 sm:py-12 lg:col-span-7">
@@ -348,10 +348,10 @@ export function HomePage() {
           >
             <div className={pillarCardImageFrame}>
               <CoverImage
-                src="/images/what-we-do-health-systems.png"
+                src="/images/what-we-do-health-systems-workstation.jpg"
                 alt=""
                 sizes="(max-width: 639px) 100vw, (max-width: 1152px) 33vw, 384px"
-                objectClassName="object-cover object-[50%_62%] sm:object-[50%_58%]"
+                objectClassName="object-cover object-left"
                 pillarHover
               />
             </div>
@@ -524,9 +524,9 @@ export function HomePage() {
           </p>
 
           <SectionSpotlightImage
-            src="/images/healthtech-workplace-consultation.webp"
-            alt="Health professional consulting with two people at a small table with a tablet in a bright modern office"
-            objectClassName="object-cover object-[50%_45%]"
+            src="/images/healthtech-workplace-meeting.jpg"
+            alt="Team meeting in a glass-walled conference room with colleagues collaborating at a table"
+            objectClassName="object-cover object-center"
           />
 
           <div className="mx-auto mt-10 max-w-[640px] space-y-6 sm:space-y-7">
@@ -576,9 +576,9 @@ export function HomePage() {
           </p>
 
           <SectionSpotlightImage
-            src="/images/knowledge-training-presentation.webp"
-            alt="Presenter leading a professional training session in a modern meeting room with data on screen"
-            objectClassName="object-cover object-[50%_42%]"
+            src="/images/knowledge-training-audience.jpg"
+            alt="Participants seated in a training session, taking notes in notebooks"
+            objectClassName="object-cover object-center"
           />
 
           <ListSectionLabel icon={GraduationCap}>
@@ -625,11 +625,9 @@ export function HomePage() {
                   aria-hidden
                 />
                 <div className="space-y-1.5 text-left sm:space-y-2">
-                  <p>
-                    Level 37, Ocean Financial Centre, 10 Collyer Quay, Raffles
-                    Place,
-                  </p>
-                  <p>049315, Singapore</p>
+                  <p>Level 37, Ocean Financial Centre</p>
+                  <p>10 Collyer Quay, Raffles Place</p>
+                  <p>Singapore 049315</p>
                 </div>
               </div>
               <p className="mt-10 flex items-center justify-center gap-2 sm:mt-12">
