@@ -485,7 +485,7 @@ export function HomePage() {
             <ListRow marker="chevron">Health screening providers</ListRow>
             <ListRow marker="chevron">
               Wellness providers, including studios and centres offering
-              structured wellness services
+              structured wellness services, i.e. yoga, spa
             </ListRow>
             <ListRow marker="chevron">
               Growing practices seeking better efficiency, patient management,
