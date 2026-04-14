@@ -2,8 +2,14 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { egFont, metropolis } from "./fonts";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.health-optix.com";
+function getSiteUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "https://www.health-optix.com";
+}
+
+const siteUrl = getSiteUrl();
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -28,21 +34,12 @@ export const metadata: Metadata = {
     title: "HealthOptix — When Health Meets Technology",
     description:
       "Health system and solution provider for integrated systems, technology-enabled solutions, and knowledge & training.",
-    images: [
-      {
-        url: "/images/who-we-are-clinic-healthtech.png",
-        width: 1024,
-        height: 771,
-        alt: "HealthOptix — health systems and technology",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "HealthOptix",
     description:
       "When Health Meets Technology — health systems, tech-enabled solutions, and knowledge programmes.",
-    images: ["/images/who-we-are-clinic-healthtech.png"],
   },
   alternates: {
     canonical: "/",
