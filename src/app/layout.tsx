@@ -40,10 +40,8 @@ export const metadata: Metadata = {
       "Health system and solution provider for integrated systems, technology-enabled solutions, and knowledge & training.",
     images: [
       {
-        url: "/opengraph-image.png",
-        width: 1200,
-        height: 630,
-        alt: "HealthOptix — When Health Meets Technology",
+        url: "/images/healthoptix--home-favicon.ico",
+        alt: "HealthOptix logo",
       },
     ],
   },
@@ -52,7 +50,7 @@ export const metadata: Metadata = {
     title: "HealthOptix",
     description:
       "When Health Meets Technology — health systems, tech-enabled solutions, and knowledge programmes.",
-    images: ["/opengraph-image.png"],
+    images: ["/images/healthoptix--home-favicon.ico"],
   },
   alternates: {
     canonical: "/",
