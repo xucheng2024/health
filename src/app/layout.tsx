@@ -26,7 +26,11 @@ export const metadata: Metadata = {
   description:
     "Health system and solution provider — integrated systems, tech-enabled health solutions, and knowledge programmes for providers, workplaces, and communities in Singapore and the region.",
   applicationName: "HealthOptix",
-  icons: { icon: "/images/healthoptix--home-favicon.ico" },
+  icons: {
+    icon: "/images/healthoptix--home-favicon.ico",
+    shortcut: "/images/healthoptix--home-favicon.ico",
+    apple: "/images/healthoptix--home-favicon.ico",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -34,12 +38,21 @@ export const metadata: Metadata = {
     title: "HealthOptix — When Health Meets Technology",
     description:
       "Health system and solution provider for integrated systems, technology-enabled solutions, and knowledge & training.",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "HealthOptix — When Health Meets Technology",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "HealthOptix",
     description:
       "When Health Meets Technology — health systems, tech-enabled solutions, and knowledge programmes.",
+    images: ["/opengraph-image.png"],
   },
   alternates: {
     canonical: "/",
