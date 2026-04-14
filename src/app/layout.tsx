@@ -28,12 +28,21 @@ export const metadata: Metadata = {
     title: "HealthOptix — When Health Meets Technology",
     description:
       "Health system and solution provider for integrated systems, technology-enabled solutions, and knowledge & training.",
+    images: [
+      {
+        url: "/images/who-we-are-clinic-healthtech.png",
+        width: 1024,
+        height: 771,
+        alt: "HealthOptix — health systems and technology",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "HealthOptix",
     description:
       "When Health Meets Technology — health systems, tech-enabled solutions, and knowledge programmes.",
+    images: ["/images/who-we-are-clinic-healthtech.png"],
   },
   alternates: {
     canonical: "/",
