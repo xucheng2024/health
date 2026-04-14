@@ -9,10 +9,10 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
-  const favicon = await readFile(
-    path.join(process.cwd(), "public/images/healthoptix--home-favicon.ico"),
+  const logoPng = await readFile(
+    path.join(process.cwd(), "public/images/share-logo.png"),
   );
-  const faviconDataUrl = `data:image/x-icon;base64,${favicon.toString("base64")}`;
+  const logoDataUrl = `data:image/png;base64,${logoPng.toString("base64")}`;
 
   return new ImageResponse(
     (
@@ -27,9 +27,9 @@ export default async function Image() {
         }}
       >
         <img
-          src={faviconDataUrl}
-          width={360}
-          height={360}
+          src={logoDataUrl}
+          width={540}
+          height={200}
           alt="HealthOptix logo"
           style={{ objectFit: "contain" }}
         />
