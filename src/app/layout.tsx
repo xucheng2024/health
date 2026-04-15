@@ -25,11 +25,6 @@ export const metadata: Metadata = {
   description:
     "Health system and solution provider — integrated systems, tech-enabled health solutions, and knowledge programmes for providers, workplaces, and communities in Singapore and the region.",
   applicationName: "HealthOptix",
-  icons: {
-    icon: "/images/healthoptix--home-favicon.ico",
-    shortcut: "/images/healthoptix--home-favicon.ico",
-    apple: "/images/healthoptix--home-favicon.ico",
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
