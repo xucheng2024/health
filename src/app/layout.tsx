@@ -39,19 +39,19 @@ export const metadata: Metadata = {
       "Health system and solution provider for integrated systems, technology-enabled solutions, and knowledge & training.",
     images: [
       {
-        url: "/images/share-og.png",
-        width: 1200,
-        height: 630,
+        url: "/images/share-og-square.png",
+        width: 300,
+        height: 300,
         alt: "HealthOptix logo",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "HealthOptix",
     description:
       "When Health Meets Technology — health systems, tech-enabled solutions, and knowledge programmes.",
-    images: ["/images/share-og.png"],
+    images: ["/images/share-og-square.png"],
   },
   alternates: {
     canonical: "/",
