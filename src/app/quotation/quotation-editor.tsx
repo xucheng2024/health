@@ -35,15 +35,6 @@ function formatSgdInt(n: number): string {
   return x.toLocaleString("en-SG", { maximumFractionDigits: 0 });
 }
 
-/** GST / totals may need cents (2 dp). */
-function formatSgdMoney(n: number): string {
-  const x = Number.isFinite(n) ? n : 0;
-  return x.toLocaleString("en-SG", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-}
-
 function parseQty(raw: string): number {
   const n = Math.floor(Number(raw));
   return Number.isFinite(n) && n >= 0 ? n : 0;
@@ -53,17 +44,6 @@ function parseUnitPrice(raw: string): number {
   const cleaned = String(raw).replace(/,/g, "").trim();
   const n = Math.round(Number(cleaned));
   return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-
-function parseNonNegativeNumber(raw: string): number {
-  const cleaned = String(raw).replace(/,/g, "").trim();
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-
-function parseGstRate(raw: string): number {
-  const n = parseNonNegativeNumber(raw);
-  return Math.min(n, 100);
 }
 
 const QUOTE_LINE_DEFAULTS: readonly number[] = [5200, 8000, 11000, 21000];
@@ -87,9 +67,6 @@ const dateInputLine = `${inputLine} max-w-full cursor-pointer accent-[#003F73] s
 
 const summaryReadout =
   "flex min-h-11 min-w-0 flex-1 items-center justify-end border-b-2 border-slate-700/55 bg-slate-50/30 px-1 py-2 text-base tabular-nums text-[#303030] print:min-h-0 print:justify-start print:border-black print:bg-transparent print:px-0 print:py-1 sm:min-h-0 sm:justify-start sm:text-left sm:text-[15px]";
-
-const gstControlInput =
-  "h-9 w-22 rounded-md border border-slate-300 bg-white px-2 text-sm tabular-nums text-[#303030] outline-none ring-0 focus:border-[#003F73]";
 
 /** Post-warranty onsite rates: EN + 中文分行，样式一致 */
 const postWarrantyRateBlock =
@@ -128,20 +105,10 @@ export function QuotationEditor() {
   const [lines, setLines] = useState<QuoteLine[]>(() =>
     QUOTE_LINE_DEFAULTS.map((unitPrice) => ({ qty: 0, unitPrice })),
   );
-  const [gstMode, setGstMode] = useState<"auto" | "manual">("auto");
-  const [gstRate, setGstRate] = useState("0");
-  const [manualGst, setManualGst] = useState("");
-
-  const { subtotal, gst, grandTotal, gstRateValue } = useMemo(() => {
-    const sub = lines.reduce((s, row) => s + row.qty * row.unitPrice, 0);
-    const rate = parseGstRate(gstRate);
-    const g =
-      gstMode === "auto"
-        ? Math.round((sub * rate) * 100) / 10000
-        : Math.round(parseNonNegativeNumber(manualGst) * 100) / 100;
-    const grand = Math.round((sub + g) * 100) / 100;
-    return { subtotal: sub, gst: g, grandTotal: grand, gstRateValue: rate };
-  }, [lines, gstMode, gstRate, manualGst]);
+  const subtotal = useMemo(
+    () => lines.reduce((s, row) => s + row.qty * row.unitPrice, 0),
+    [lines],
+  );
 
   const setLineQty = useCallback((index: number, raw: string) => {
     const qty = parseQty(raw);
@@ -591,47 +558,8 @@ export function QuotationEditor() {
       <SectionTitle>SUMMARY / 总计</SectionTitle>
       <div className="mt-5 rounded-xl border border-slate-200/85 bg-gradient-to-b from-slate-50/90 to-white p-5 shadow-sm sm:p-6 print:mt-4 print:border-slate-300 print:bg-white print:shadow-none">
         <p className="text-[12px] leading-relaxed text-[#303030]/72 print:text-[11px]">
-          小计 = 各行 Amount 之和；GST 可按税率自动计算（默认 0%）或手动输入；总计 = 小计 + GST。
+          小计 = 各行 Amount 之和；总计 = 小计。
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#303030]/80 print:hidden">
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={gstMode === "auto"}
-              onChange={(e) => setGstMode(e.target.checked ? "auto" : "manual")}
-              className="h-4 w-4 accent-[#003F73]"
-            />
-            <span>Auto GST</span>
-          </label>
-          {gstMode === "auto" ? (
-            <label className="inline-flex items-center gap-2">
-              <span>Rate (%)</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.1}
-                value={gstRate}
-                onChange={(e) => setGstRate(e.target.value)}
-                className={gstControlInput}
-                aria-label="GST rate percentage"
-              />
-            </label>
-          ) : (
-            <label className="inline-flex items-center gap-2">
-              <span>Manual GST (SGD)</span>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={manualGst}
-                onChange={(e) => setManualGst(e.target.value)}
-                className={gstControlInput}
-                aria-label="Manual GST amount"
-              />
-            </label>
-          )}
-        </div>
         <div className="mt-4 max-w-lg space-y-3.5 text-[15px]">
           <div className="flex flex-wrap items-end gap-x-3 gap-y-2 border-b border-slate-200/90 pb-2.5 print:border-slate-300">
             <span className="min-w-[10rem] shrink-0 text-[#303030]">
@@ -649,31 +577,6 @@ export function QuotationEditor() {
               </span>
             </div>
           </div>
-          <div className="flex flex-wrap items-end gap-x-3 gap-y-2 border-b border-slate-200/90 pb-2.5 print:border-slate-300">
-            <span className="min-w-[10rem] shrink-0 text-[#303030]">
-              GST / 税 {gstMode === "auto" ? `(${formatSgdMoney(gstRateValue)}%)` : "(Manual)"}
-            </span>
-            <div className="flex w-full min-w-0 flex-1 items-end gap-2 sm:w-auto sm:min-w-56">
-              <span className="shrink-0 pb-0.5 text-sm font-medium text-[#303030]/75">
-                SGD
-              </span>
-              {gstMode === "auto" ? (
-                <span className={summaryReadout} aria-label="GST">
-                  {formatSgdMoney(gst)}
-                </span>
-              ) : (
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={manualGst}
-                  onChange={(e) => setManualGst(e.target.value)}
-                  className={`${summaryReadout} bg-white px-2 text-right sm:px-1 sm:text-left`}
-                  aria-label="GST"
-                />
-              )}
-            </div>
-          </div>
           <div className="flex flex-wrap items-end gap-x-3 gap-y-2 pb-0.5">
             <span className="min-w-[10rem] shrink-0 font-semibold text-[#003F73]">
               Grand Total / 总计
@@ -686,7 +589,7 @@ export function QuotationEditor() {
                 className={`${summaryReadout} border-[#003F73]/55 font-semibold text-[#003F73] print:border-black`}
                 aria-label="Grand total"
               >
-                {formatSgdMoney(grandTotal)}
+                {formatSgdInt(subtotal)}
               </span>
             </div>
           </div>
