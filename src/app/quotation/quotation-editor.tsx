@@ -842,10 +842,6 @@ export function QuotationEditor() {
       </ol>
 
       <SectionTitle>ACCEPTANCE / 确认签署</SectionTitle>
-      <p className="mt-3 rounded-md border border-amber-200/80 bg-amber-50/50 px-3 py-2 text-[12px] leading-relaxed text-[#303030]/80 print:border-slate-300 print:bg-neutral-50 print:text-[11px]">
-        以下栏位于<strong className="font-semibold text-[#303030]">打印后</strong>
-        由客户手写签署（网页内不填写）。
-      </p>
       <div className="mt-6 space-y-5 text-[15px] print:mt-8">
         <div className="flex flex-wrap items-end gap-x-3 gap-y-1 print:break-inside-avoid">
           <span className="shrink-0 text-[#303030]/85">Signature / 签名：</span>
