@@ -699,19 +699,19 @@ export function QuotationEditor() {
       <ul className="mt-4 list-disc space-y-3 pl-5 text-[15px] leading-relaxed marker:text-[#003F73]">
         <li>Cloud hosting &amp; system access — 云端托管与系统使用</li>
         <li>
-          <p>Monthly subscription fee — 每月系统订阅费</p>
+          <p>Annual subscription fee — 每年系统订阅费</p>
           <div className="mt-2 flex max-w-md flex-wrap items-end gap-2 rounded-md border border-slate-200/80 bg-slate-50/50 px-3 py-2 print:border-slate-300 print:bg-neutral-50">
             <span className="shrink-0 pb-0.5 text-sm font-medium text-[#303030]/75">
               SGD
             </span>
             <span
               className="block min-w-[6rem] flex-1 border-b-2 border-slate-700/45 py-0.5 text-right text-[15px] font-semibold tabular-nums text-[#303030] print:border-black"
-              aria-label="Monthly subscription amount"
+              aria-label="Annual subscription amount"
             >
               999
             </span>
             <span className="shrink-0 pb-0.5 text-sm text-[#303030]/75">
-              / month
+              / year
             </span>
           </div>
         </li>
