@@ -23,6 +23,13 @@ const CORE_OPERATIONS_FEATURE_ROWS: readonly { en: string; zh: string }[] = [
 
 type QuoteLine = { qty: number; unitPrice: number };
 
+const LINE_TITLES: readonly string[] = [
+  "Core Operations",
+  "Advanced Operations",
+  "Complete Growth Solution",
+  "Full Digital Transformation",
+];
+
 function formatSgdInt(n: number): string {
   const x = Math.round(Number.isFinite(n) ? n : 0);
   return x.toLocaleString("en-SG", { maximumFractionDigits: 0 });
@@ -254,9 +261,100 @@ export function QuotationEditor() {
 
       <SectionTitle>SCOPE OF SUPPLY / 系统模块与服务内容</SectionTitle>
       <p className="mt-2 text-[12px] text-[#303030]/65 sm:hidden print:hidden">
-        ← 左右滑动查看完整价格表
+        手机端已优化为卡片输入，无需横向滚动
       </p>
-      <div className="quotation-doc__table-scroll -mx-1 mt-3 overflow-x-auto rounded-xl border border-slate-200/90 shadow-sm ring-1 ring-slate-900/[0.04] print:mx-0 print:mt-4 print:shadow-none print:ring-0 sm:mx-0 sm:mt-5">
+      <div className="mt-3 space-y-3 sm:hidden print:hidden">
+        <article className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm ring-1 ring-slate-900/[0.04]">
+          <p className="text-sm font-semibold text-[#003F73]">1. Core Operations</p>
+          <div className="mt-2 space-y-2 text-[13px] leading-relaxed text-[#303030]">
+            {CORE_OPERATIONS_FEATURE_ROWS.map(({ en }) => (
+              <p key={en}>- {en}</p>
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-2.5">
+            <label className="text-[12px] text-[#303030]/70">
+              Qty
+              <input
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={lines[0].qty}
+                onChange={(e) => setLineQty(0, e.target.value)}
+                className={`${tableQtyInput} mt-1 max-w-none`}
+                aria-label="Row 1 quantity"
+              />
+            </label>
+            <label className="text-[12px] text-[#303030]/70">
+              Unit Price (SGD)
+              <input
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={lines[0].unitPrice}
+                onChange={(e) => setLineUnitPrice(0, e.target.value)}
+                className={`${tableUnitInput} mt-1 min-w-0 max-w-none`}
+                aria-label="Row 1 unit price (SGD)"
+              />
+            </label>
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+              <span className="text-[#303030]/75">Amount: </span>
+              <span className="font-semibold tabular-nums text-[#003F73]">
+                {formatSgdInt(lines[0].qty * lines[0].unitPrice)}
+              </span>
+            </div>
+          </div>
+        </article>
+        {LINE_TITLES.slice(1).map((title, idx) => {
+          const lineIndex = idx + 1;
+          return (
+            <article
+              key={title}
+              className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm ring-1 ring-slate-900/[0.04]"
+            >
+              <p className="text-sm font-semibold text-[#003F73]">
+                {lineIndex + 1}. {title}
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2.5">
+                <label className="text-[12px] text-[#303030]/70">
+                  Qty
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    value={lines[lineIndex].qty}
+                    onChange={(e) => setLineQty(lineIndex, e.target.value)}
+                    className={`${tableQtyInput} mt-1 max-w-none`}
+                    aria-label={`Row ${lineIndex + 1} quantity`}
+                  />
+                </label>
+                <label className="text-[12px] text-[#303030]/70">
+                  Unit Price (SGD)
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    value={lines[lineIndex].unitPrice}
+                    onChange={(e) => setLineUnitPrice(lineIndex, e.target.value)}
+                    className={`${tableUnitInput} mt-1 min-w-0 max-w-none`}
+                    aria-label={`Row ${lineIndex + 1} unit price (SGD)`}
+                  />
+                </label>
+                <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <span className="text-[#303030]/75">Amount: </span>
+                  <span className="font-semibold tabular-nums text-[#003F73]">
+                    {formatSgdInt(lines[lineIndex].qty * lines[lineIndex].unitPrice)}
+                  </span>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      <div className="quotation-doc__table-scroll -mx-1 mt-3 hidden overflow-x-auto rounded-xl border border-slate-200/90 shadow-sm ring-1 ring-slate-900/[0.04] print:mx-0 print:mt-4 print:block print:shadow-none print:ring-0 sm:mx-0 sm:mt-5 sm:block">
         <table className="w-full min-w-[640px] border-collapse text-left text-sm">
           <thead>
             <tr className="bg-[#003F73] text-white">
