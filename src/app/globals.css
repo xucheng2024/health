@@ -95,3 +95,51 @@ body {
 .font-eg {
   font-family: var(--font-eg), ui-sans-serif, sans-serif;
 }
+
+/* —— Quotation / 报价单: screen + print —— */
+@media print {
+  @page {
+    margin: 14mm 16mm;
+    size: A4;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .quotation-doc {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .quotation-doc__sheet {
+    box-shadow: none !important;
+  }
+
+  /* Cleaner printed form controls */
+  .quotation-doc input[type="number"]::-webkit-inner-spin-button,
+  .quotation-doc input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .quotation-doc input[type="number"] {
+    appearance: textfield;
+  }
+
+  .quotation-doc input[type="date"] {
+    min-height: 1.5rem;
+  }
+
+  .quotation-doc__terms > li {
+    orphans: 2;
+    widows: 2;
+  }
+}
+
+/* Quotation: smooth horizontal table scroll on touch devices */
+.quotation-doc__table-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
