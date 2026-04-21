@@ -849,6 +849,49 @@ export function QuotationEditor() {
         </li>
         <li>
           <p className="font-semibold text-[#003F73]">
+            Resource Usage / Fair Usage
+          </p>
+          <p className="mt-2">
+            The subscription includes reasonable usage of system resources,
+            including storage and bandwidth, under normal business operations.
+          </p>
+          <p className="mt-2 text-[#303030]/90">
+            本订阅费用已包含在正常业务使用范围内的系统资源（包括存储与带宽）。
+          </p>
+          <p className="mt-2">
+            HealthOptix reserves the right to monitor system usage to ensure
+            fair and appropriate use of the platform. In the event of excessive
+            or abnormal usage (including but not limited to unusually high media
+            uploads, downloads, or streaming activities), HealthOptix may:
+          </p>
+          <p className="mt-2 text-[#303030]/90">
+            HealthOptix 有权对系统使用情况进行监控，以确保平台的合理与公平使用。如出现异常或过度使用情况（包括但不限于大量视频或音频上传、下载或频繁播放等），HealthOptix 有权：
+          </p>
+          <p className="mt-2">
+            (a) recommend an upgrade to a higher subscription plan;
+          </p>
+          <p className="mt-2 text-[#303030]/90">
+            （a）建议客户升级至更高订阅方案；
+          </p>
+          <p className="mt-2">(b) impose reasonable usage limitations; or</p>
+          <p className="mt-2 text-[#303030]/90">（b）实施合理的使用限制；或</p>
+          <p className="mt-2">
+            (c) take necessary measures to maintain system performance and
+            stability.
+          </p>
+          <p className="mt-2 text-[#303030]/90">
+            （c）采取必要措施以确保系统性能与稳定性。
+          </p>
+          <p className="mt-2">
+            The platform is not intended for large-scale media hosting or
+            distribution beyond normal operational use.
+          </p>
+          <p className="mt-2 text-[#303030]/90">
+            本平台并非用于大规模媒体存储或分发用途。
+          </p>
+        </li>
+        <li>
+          <p className="font-semibold text-[#003F73]">
             Non-Transferability / 不可转让
           </p>
           <p className="mt-2">
