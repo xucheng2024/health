@@ -232,7 +232,7 @@ export function QuotationStandardClauses() {
         </li>
         <li>
           <p className="font-semibold text-[#003F73]">
-            Resource Usage / Fair Usage
+            Resource & Fair Usage / 资源与合理使用
           </p>
           <p className="mt-2">
             The subscription includes reasonable usage of system resources,
