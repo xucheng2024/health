@@ -119,6 +119,12 @@ export function QuotationSignClient({ token }: { token: string }) {
     };
   }, [payload]);
 
+  const handleSavePdf = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.print();
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payload?.canSign || submitting) return;
@@ -185,11 +191,6 @@ export function QuotationSignClient({ token }: { token: string }) {
   const signed = payload.signed;
   const showSigned = Boolean(signed) && !payload.canSign;
   const showForm = payload.canSign && !showSigned;
-  const handleSavePdf = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.print();
-    }
-  }, []);
 
   return (
     <div className="pb-16">
