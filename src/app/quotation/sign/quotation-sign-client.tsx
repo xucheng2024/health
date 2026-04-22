@@ -185,7 +185,11 @@ export function QuotationSignClient({ token }: { token: string }) {
   const signed = payload.signed;
   const showSigned = Boolean(signed) && !payload.canSign;
   const showForm = payload.canSign && !showSigned;
-  const pdfHref = `/api/public/quotes/sign/${encodeURIComponent(token)}/pdf`;
+  const handleSavePdf = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.print();
+    }
+  }, []);
 
   return (
     <div className="pb-16">
@@ -232,15 +236,14 @@ export function QuotationSignClient({ token }: { token: string }) {
                 className="mt-2 max-h-40 w-auto object-contain"
               />
             </div>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <a
-                href={pdfHref}
-                target="_blank"
-                rel="noreferrer"
+            <div className="mt-5 flex flex-wrap gap-2 print:hidden">
+              <button
+                type="button"
+                onClick={handleSavePdf}
                 className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#003F73] px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-[#003F73]/20 transition-opacity hover:opacity-[0.95]"
               >
-                Download Signed PDF
-              </a>
+                Save as PDF
+              </button>
             </div>
           </section>
         ) : null}

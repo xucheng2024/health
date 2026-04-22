@@ -290,10 +290,6 @@ export function QuotationEditor() {
           window.requestAnimationFrame(() => {
             window.scrollTo({ top: 0, behavior: "smooth" });
           });
-          // Best effort: open signed link page in a new tab so users can see an immediate result.
-          if (created.signingUrl) {
-            window.open(created.signingUrl, "_blank", "noopener,noreferrer");
-          }
         }
         return { ok: true };
       } catch {

@@ -1,6 +1,6 @@
 import type { QuoteRecord } from "@/lib/types";
 import { getPlanById } from "@/data/plans";
-import { signedPdfUrl, signingPageUrl } from "@/lib/site-url";
+import { signingPageUrl } from "@/lib/site-url";
 
 type EmailPayload = {
   to: string;
@@ -51,7 +51,6 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
   const signerName =
     record.signature?.signerName ?? record.quote.contactName;
   const viewUrl = signingPageUrl(record.quote.signingToken);
-  const pdfUrl = signedPdfUrl(record.quote.signingToken);
 
   const customerHtml = `
     <h2>Your quotation has been signed</h2>
@@ -65,7 +64,7 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
       <li>Signed At: ${escapeHtml(signedAt)}</li>
     </ul>
     <p><a href="${escapeHtml(viewUrl)}">View signed quotation</a></p>
-    <p><a href="${escapeHtml(pdfUrl)}">Download signed PDF</a></p>
+    <p>Download the signed PDF directly on the signed quotation page.</p>
   `;
 
   const internalHtml = `
@@ -81,7 +80,7 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
       <li>Signed At: ${escapeHtml(signedAt)}</li>
       <li>Quote ID: ${escapeHtml(record.quote.id)}</li>
       <li>Signing page: <a href="${escapeHtml(viewUrl)}">${escapeHtml(viewUrl)}</a></li>
-      <li>Signed PDF: <a href="${escapeHtml(pdfUrl)}">${escapeHtml(pdfUrl)}</a></li>
+      <li>Signed PDF: available from the signing page after opening the link above.</li>
     </ul>
   `;
 

@@ -16,9 +16,3 @@ export function signingPageUrl(signingToken: string): string {
   const path = `/quotation/sign/${encodeURIComponent(signingToken)}`;
   return base ? `${base}${path}` : path;
 }
-
-export function signedPdfUrl(signingToken: string): string {
-  const base = getSiteBaseUrl();
-  const path = `/api/public/quotes/sign/${encodeURIComponent(signingToken)}/pdf`;
-  return base ? `${base}${path}` : path;
-}
