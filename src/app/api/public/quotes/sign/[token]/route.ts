@@ -78,7 +78,6 @@ async function publicQuotePayload(
       contactName: quote.contactName,
       contactEmail: quote.contactEmail,
       contactPhone: quote.contactPhone,
-      billingAddress: quote.billingAddress,
       currency: quote.currency,
       unitPrice: quote.unitPrice,
       qty: quote.qty,

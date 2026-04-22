@@ -45,7 +45,6 @@ export type QuotationReadonlyQuote = {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
-  billingAddress: string;
   currency: string;
   unitPrice: number;
   qty: number;
@@ -73,6 +72,7 @@ export function QuotationReadonlyDocument({
   legalTermsText,
 }: QuotationReadonlyProps) {
   const lineAmount = quote.unitPrice * quote.qty - quote.discount;
+  const showTax = quote.taxRate > 0 || quote.taxAmount > 0;
   const legalTermsParagraphs = legalTermsText
     ? renderLegalTermsParagraphs(legalTermsText)
     : [];
@@ -124,10 +124,6 @@ export function QuotationReadonlyDocument({
               <ReadonlyField label="Contact name / 联系人" value={quote.contactName} />
               <ReadonlyField label="Email / 邮箱" value={quote.contactEmail} />
               <ReadonlyField label="Phone / 电话" value={quote.contactPhone || "—"} />
-              <ReadonlyField
-                label="Billing address / 账单地址"
-                value={quote.billingAddress || "—"}
-              />
             </div>
           </section>
 
@@ -194,17 +190,19 @@ export function QuotationReadonlyDocument({
                   <span className={readout}>{formatMoney(quote.currency, quote.subtotal)}</span>
                 </div>
               </div>
-              <div className="flex flex-wrap items-end gap-x-3 gap-y-2 border-b border-slate-200/90 pb-2.5">
-                <span className="min-w-[10rem] shrink-0 text-[#303030]">
-                  Tax ({quote.taxRate}%) / 税
-                </span>
-                <div className="flex min-w-0 flex-1 items-end gap-2">
-                  <span className="shrink-0 pb-0.5 text-sm font-medium text-[#303030]/75">
-                    {quote.currency}
+              {showTax ? (
+                <div className="flex flex-wrap items-end gap-x-3 gap-y-2 border-b border-slate-200/90 pb-2.5">
+                  <span className="min-w-[10rem] shrink-0 text-[#303030]">
+                    Tax ({quote.taxRate}%) / 税
                   </span>
-                  <span className={readout}>{formatMoney(quote.currency, quote.taxAmount)}</span>
+                  <div className="flex min-w-0 flex-1 items-end gap-2">
+                    <span className="shrink-0 pb-0.5 text-sm font-medium text-[#303030]/75">
+                      {quote.currency}
+                    </span>
+                    <span className={readout}>{formatMoney(quote.currency, quote.taxAmount)}</span>
+                  </div>
                 </div>
-              </div>
+              ) : null}
               <div className="flex flex-wrap items-end gap-x-3 gap-y-2 pb-0.5">
                 <span className="min-w-[10rem] shrink-0 font-semibold text-[#003F73]">
                   Total / 总计

@@ -175,7 +175,6 @@ export async function generateSignedQuotePdfBuffer(params: {
     `Contact: ${record.quote.contactName}`,
     `Email: ${record.quote.contactEmail}`,
     `Phone: ${record.quote.contactPhone || "-"}`,
-    `Billing Address: ${record.quote.billingAddress || "-"}`,
   ]) {
     writeWrapped(line, { size: 10 });
   }
@@ -200,9 +199,11 @@ export async function generateSignedQuotePdfBuffer(params: {
 
   sectionTitle("Financials");
   writeLine(`Subtotal: ${formatMoney(record.quote.currency, record.quote.subtotal)}`);
-  writeLine(
-    `Tax (${record.quote.taxRate}%): ${formatMoney(record.quote.currency, record.quote.taxAmount)}`,
-  );
+  if (record.quote.taxRate > 0 || record.quote.taxAmount > 0) {
+    writeLine(
+      `Tax (${record.quote.taxRate}%): ${formatMoney(record.quote.currency, record.quote.taxAmount)}`,
+    );
+  }
   writeLine(`Total: ${formatMoney(record.quote.currency, record.quote.total)}`, { gapAfter: 8 });
 
   sectionTitle("Signature");

@@ -19,7 +19,6 @@ type SignApiQuote = {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
-  billingAddress: string;
   currency: string;
   unitPrice: number;
   qty: number;

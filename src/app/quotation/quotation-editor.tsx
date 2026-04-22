@@ -284,7 +284,17 @@ export function QuotationEditor() {
           return { ok: false, error };
         }
 
-        setCreatedQuote(data as CreatedQuoteResult);
+        const created = data as CreatedQuoteResult;
+        setCreatedQuote(created);
+        if (typeof window !== "undefined") {
+          window.requestAnimationFrame(() => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+          // Best effort: open signed link page in a new tab so users can see an immediate result.
+          if (created.signingUrl) {
+            window.open(created.signingUrl, "_blank", "noopener,noreferrer");
+          }
+        }
         return { ok: true };
       } catch {
         const error = "Network error while creating quotation.";
@@ -359,32 +369,6 @@ export function QuotationEditor() {
             <p className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 print:hidden">
               {createError}
             </p>
-          ) : null}
-
-          {createdQuote ? (
-            <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-4 text-sm text-[#303030] print:hidden">
-              <p className="font-semibold text-[#003F73]">
-                Quote created: {createdQuote.quote.quoteNo}
-              </p>
-              <p className="mt-1">
-                Customer: {createdQuote.quote.contactName} ({createdQuote.quote.contactEmail})
-              </p>
-              <p className="mt-1">
-                Total: {createdQuote.quote.currency} {createdQuote.quote.total.toFixed(2)}
-              </p>
-              <p className="mt-3 break-all">
-                Signing link:{" "}
-                <a
-                  href={createdQuote.signingUrl}
-                  className="font-medium text-[#003F73] underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {createdQuote.signingUrl}
-                </a>
-              </p>
-              <CreatedQuoteActions signingUrl={createdQuote.signingUrl} />
-            </div>
           ) : null}
 
           <section className="mt-8 rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50/95 to-white p-4 shadow-sm sm:mt-10 sm:p-7 print:mt-6 print:border-slate-300 print:bg-white print:shadow-none">
@@ -899,6 +883,32 @@ export function QuotationEditor() {
         </button>
       </div>
 
+      {createdQuote ? (
+        <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-4 text-sm text-[#303030] shadow-sm motion-safe:animate-[fade-in-up_220ms_ease-out] print:hidden">
+          <p className="font-semibold text-[#003F73]">
+            Quote created: {createdQuote.quote.quoteNo}
+          </p>
+          <p className="mt-1">
+            Customer: {createdQuote.quote.contactName} ({createdQuote.quote.contactEmail})
+          </p>
+          <p className="mt-1">
+            Total: {createdQuote.quote.currency} {createdQuote.quote.total.toFixed(2)}
+          </p>
+          <p className="mt-3 break-all">
+            Signing link:{" "}
+            <a
+              href={createdQuote.signingUrl}
+              className="font-medium text-[#003F73] underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {createdQuote.signingUrl}
+            </a>
+          </p>
+          <CreatedQuoteActions signingUrl={createdQuote.signingUrl} />
+        </div>
+      ) : null}
+
       <p className="mt-14 border-t border-slate-200/80 pt-6 text-center text-[11px] text-[#303030]/65 print:mt-10 print:border-slate-300 print:pt-4">
         Template version aligned with internal quotation document (April 2026).
       </p>
@@ -925,6 +935,7 @@ export function QuotationEditor() {
                   ref={createPasswordInputRef}
                   type="password"
                   autoFocus
+                  autoComplete="current-password"
                   placeholder="Enter password"
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
