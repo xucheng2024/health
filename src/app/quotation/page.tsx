@@ -8,6 +8,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/quotation" },
 };
 
-export default function QuotationPage() {
+export default async function QuotationPage() {
   return <QuotationEditor />;
 }

@@ -12,7 +12,12 @@ export type Plan = {
   termsSummary: string[];
 };
 
-export type QuoteStatus = "draft" | "signed";
+export type QuoteStatus =
+  | "draft"
+  | "sent"
+  | "signed"
+  | "expired"
+  | "cancelled";
 
 export type Quote = {
   id: string;
@@ -34,6 +39,10 @@ export type Quote = {
   total: number;
   agreedToTerms: boolean;
   signedAt: string | null;
+  signingToken: string;
+  signingTokenExpiresAt: string | null;
+  sentAt: string | null;
+  viewedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -43,12 +52,29 @@ export type Signature = {
   quoteId: string;
   signerName: string;
   signatureData: string;
+  /** @deprecated use signerIp — kept for older responses */
   ip?: string;
+  /** @deprecated use signerUserAgent */
   userAgent?: string;
+  signerIp?: string;
+  signerUserAgent?: string;
+  signedDocumentHash?: string | null;
   createdAt: string;
+};
+
+export type QuoteLineItem = {
+  id?: string;
+  quoteId?: string;
+  title: string;
+  qty: number;
+  unitPrice: number;
+  amount: number;
+  sortOrder: number;
+  createdAt?: string;
 };
 
 export type QuoteRecord = {
   quote: Quote;
   signature: Signature | null;
+  lineItems: QuoteLineItem[];
 };

@@ -1,11 +1,20 @@
 import type { QuoteRecord } from "@/lib/types";
 import { getPlanById } from "@/data/plans";
+import { signedPdfUrl, signingPageUrl } from "@/lib/site-url";
 
 type EmailPayload = {
   to: string;
   subject: string;
   html: string;
 };
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 async function sendViaResend(payload: EmailPayload): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -39,29 +48,40 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
   const plan = getPlanById(record.quote.planId);
   const signedAt = record.quote.signedAt ?? record.quote.updatedAt;
   const total = `${record.quote.currency} ${record.quote.total.toFixed(2)}`;
+  const signerName =
+    record.signature?.signerName ?? record.quote.contactName;
+  const viewUrl = signingPageUrl(record.quote.signingToken);
+  const pdfUrl = signedPdfUrl(record.quote.signingToken);
 
   const customerHtml = `
     <h2>Your quotation has been signed</h2>
-    <p>Dear ${record.quote.contactName},</p>
+    <p>Dear ${escapeHtml(record.quote.contactName)},</p>
     <p>Thank you. Your quotation has been signed successfully.</p>
     <ul>
-      <li>Quotation No: ${record.quote.quoteNo}</li>
-      <li>Plan: ${plan?.name ?? record.quote.planId}</li>
-      <li>Total: ${total}</li>
-      <li>Signed At: ${signedAt}</li>
+      <li>Quotation No: ${escapeHtml(record.quote.quoteNo)}</li>
+      <li>Plan: ${escapeHtml(plan?.name ?? record.quote.planId)}</li>
+      <li>Total: ${escapeHtml(total)}</li>
+      <li>Signer: ${escapeHtml(signerName)}</li>
+      <li>Signed At: ${escapeHtml(signedAt)}</li>
     </ul>
+    <p><a href="${escapeHtml(viewUrl)}">View signed quotation</a></p>
+    <p><a href="${escapeHtml(pdfUrl)}">Download signed PDF</a></p>
   `;
 
   const internalHtml = `
     <h2>New signed quotation</h2>
     <ul>
-      <li>Company: ${record.quote.companyName}</li>
-      <li>Contact: ${record.quote.contactName}</li>
-      <li>Email: ${record.quote.contactEmail}</li>
-      <li>Plan: ${plan?.name ?? record.quote.planId}</li>
-      <li>Total: ${total}</li>
-      <li>Signed At: ${signedAt}</li>
-      <li>Quote ID: ${record.quote.id}</li>
+      <li>Company: ${escapeHtml(record.quote.companyName)}</li>
+      <li>Contact: ${escapeHtml(record.quote.contactName)}</li>
+      <li>Email: ${escapeHtml(record.quote.contactEmail)}</li>
+      <li>Plan: ${escapeHtml(plan?.name ?? record.quote.planId)}</li>
+      <li>Quotation No: ${escapeHtml(record.quote.quoteNo)}</li>
+      <li>Total: ${escapeHtml(total)}</li>
+      <li>Signer: ${escapeHtml(signerName)}</li>
+      <li>Signed At: ${escapeHtml(signedAt)}</li>
+      <li>Quote ID: ${escapeHtml(record.quote.id)}</li>
+      <li>Signing page: <a href="${escapeHtml(viewUrl)}">${escapeHtml(viewUrl)}</a></li>
+      <li>Signed PDF: <a href="${escapeHtml(pdfUrl)}">${escapeHtml(pdfUrl)}</a></li>
     </ul>
   `;
 

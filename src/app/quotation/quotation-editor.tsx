@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { SectionTitle } from "@/components/quotation/quotation-doc-primitives";
+import { QuotationStandardClauses } from "@/components/quotation/quotation-standard-clauses";
 
 const CORE_OPERATIONS_FEATURE_ROWS: readonly { en: string; zh: string }[] = [
   {
@@ -22,6 +24,7 @@ const CORE_OPERATIONS_FEATURE_ROWS: readonly { en: string; zh: string }[] = [
 ];
 
 type QuoteLine = { qty: number; unitPrice: number };
+type CreateLineItem = { title: string; qty: number; unitPrice: number };
 
 const LINE_TITLES: readonly string[] = [
   "Core Operations",
@@ -46,6 +49,23 @@ function parseUnitPrice(raw: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
+function slugify(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function formatDateInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addYears(date: Date, years: number): Date {
+  const next = new Date(date);
+  next.setFullYear(next.getFullYear() + years);
+  return next;
+}
+
 const QUOTE_LINE_DEFAULTS: readonly number[] = [5200, 8000, 11000, 21000];
 
 const inputLine =
@@ -68,10 +88,6 @@ const dateInputLine = `${inputLine} max-w-full cursor-pointer accent-[#003F73] s
 const summaryReadout =
   "flex min-h-11 min-w-0 flex-1 items-center justify-end border-b-2 border-slate-700/55 bg-slate-50/30 px-1 py-2 text-base tabular-nums text-[#303030] print:min-h-0 print:justify-start print:border-black print:bg-transparent print:px-0 print:py-1 sm:min-h-0 sm:justify-start sm:text-left sm:text-[15px]";
 
-/** Post-warranty onsite rates: EN + 中文分行，样式一致 */
-const postWarrantyRateBlock =
-  "space-y-1.5 rounded-lg border border-slate-200/85 bg-slate-50/45 px-3 py-2.5 text-[15px] leading-relaxed text-[#303030] print:border-slate-300 print:bg-white";
-
 function Field({
   label,
   children,
@@ -89,19 +105,70 @@ function Field({
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+type CreatedQuoteResult = {
+  quote: {
+    id: string;
+    quoteNo: string;
+    companyName: string;
+    contactName: string;
+    contactEmail: string;
+    total: number;
+    currency: string;
+  };
+  signingUrl: string;
+};
+
+function CreatedQuoteActions({ signingUrl }: { signingUrl: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(signingUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy signing link:", signingUrl);
+    }
+  }, [signingUrl]);
+
   return (
-    <h2 className="mt-10 scroll-mt-4 border-b-2 border-[#003F73] pb-2.5 text-[0.95rem] font-semibold leading-snug tracking-tight text-[#003F73] text-balance sm:mt-14 sm:text-lg print:mt-10 print:break-inside-avoid print:pb-2">
-      {children}
-    </h2>
+    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+      <a
+        href={signingUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#003F73] px-4 py-2.5 text-sm font-semibold tracking-wide text-white shadow-md shadow-[#003F73]/20 transition-opacity hover:opacity-[0.96]"
+      >
+        Open Signing Page
+      </a>
+      <button
+        type="button"
+        onClick={() => void handleCopy()}
+        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#003F73]/20 bg-white px-4 py-2.5 text-sm font-semibold tracking-wide text-[#003F73] shadow-sm transition-colors hover:bg-slate-50"
+      >
+        {copied ? "Copied Link" : "Copy Link"}
+      </button>
+    </div>
   );
 }
 
 export function QuotationEditor() {
+  const today = useMemo(() => new Date(), []);
   const [billTo, setBillTo] = useState("");
-  const [quoteNo, setQuoteNo] = useState("");
-  const [quoteDate, setQuoteDate] = useState("");
-  const [validUntil, setValidUntil] = useState("");
+  const [quoteDate, setQuoteDate] = useState(() => formatDateInput(today));
+  const [validUntil, setValidUntil] = useState(() =>
+    formatDateInput(addYears(today, 1)),
+  );
+  const [companyName, setCompanyName] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createdQuote, setCreatedQuote] = useState<CreatedQuoteResult | null>(null);
+  const [showCreatePasswordModal, setShowCreatePasswordModal] = useState(false);
+  const [createPasswordInput, setCreatePasswordInput] = useState("");
+  const [createPasswordError, setCreatePasswordError] = useState<string | null>(null);
   const [lines, setLines] = useState<QuoteLine[]>(() =>
     QUOTE_LINE_DEFAULTS.map((unitPrice) => ({ qty: 0, unitPrice })),
   );
@@ -109,6 +176,46 @@ export function QuotationEditor() {
     () => lines.reduce((s, row) => s + row.qty * row.unitPrice, 0),
     [lines],
   );
+  const createPreview = useMemo(() => {
+    const lineItems: CreateLineItem[] = LINE_TITLES.map((title, index) => ({
+      title,
+      qty: Math.max(0, lines[index]?.qty ?? 0),
+      unitPrice: Math.max(0, lines[index]?.unitPrice ?? 0),
+    }));
+    const subtotalValue = lineItems.reduce(
+      (sum, row) => sum + row.qty * row.unitPrice,
+      0,
+    );
+    const clampedSubtotal = Math.max(0, Number(subtotalValue.toFixed(2)));
+    const taxRate = 0;
+    const taxAmount = 0;
+    const total = clampedSubtotal;
+    const pickedRows = lineItems.filter((row) => row.qty > 0);
+    const picked = pickedRows[0];
+    const packageId =
+      pickedRows.length === 0
+        ? "custom-table"
+        : pickedRows.length === 1 && picked
+          ? slugify(picked.title)
+          : "custom-multi-line";
+    const packageName =
+      pickedRows.length === 0
+        ? "Custom Table Package"
+        : pickedRows.length === 1 && picked
+          ? picked.title
+          : "Custom Multi-line Package";
+    return {
+      lineItems,
+      packageId,
+      packageName,
+      qty: 1,
+      discount: 0,
+      taxRate,
+      subtotal: clampedSubtotal,
+      taxAmount,
+      total,
+    };
+  }, [lines]);
 
   const setLineQty = useCallback((index: number, raw: string) => {
     const qty = parseQty(raw);
@@ -124,9 +231,91 @@ export function QuotationEditor() {
     );
   }, []);
 
-  const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
+  const submitCreateQuote = useCallback(
+    async (createPassword: string) => {
+      if (!createPreview) return;
+      if (createPreview.subtotal <= 0) {
+        setCreateError("Please add quantity in at least one package row.");
+        return;
+      }
+
+      setCreating(true);
+      setCreateError(null);
+      setCreatedQuote(null);
+
+      try {
+        const response = await fetch("/api/quotes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-create-password": createPassword.trim(),
+          },
+          body: JSON.stringify({
+            planId: createPreview.packageId,
+            packageName: createPreview.packageName,
+            companyName: companyName.trim(),
+            contactName: contactName.trim(),
+            contactEmail: contactEmail.trim(),
+            contactPhone: contactPhone.trim(),
+            lineItems: createPreview.lineItems,
+            qty: createPreview.qty,
+            discount: createPreview.discount,
+            taxRate: createPreview.taxRate,
+          }),
+        });
+
+        const data = (await response.json()) as
+          | CreatedQuoteResult
+          | { error?: string; message?: string };
+
+        if (!response.ok) {
+          const apiError =
+            "message" in data
+              ? data.message
+              : "error" in data
+                ? data.error
+                : undefined;
+          setCreateError(apiError ?? "Unable to create quotation.");
+          return;
+        }
+
+        setCreatedQuote(data as CreatedQuoteResult);
+      } catch {
+        setCreateError("Network error while creating quotation.");
+      } finally {
+        setCreating(false);
+      }
+    },
+    [
+      companyName,
+      contactEmail,
+      contactName,
+      contactPhone,
+      createPreview,
+    ],
+  );
+
+  const handleCreateQuote = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!createPreview || creating) return;
+      setCreatePasswordInput("");
+      setCreatePasswordError(null);
+      setShowCreatePasswordModal(true);
+    },
+    [createPreview, creating],
+  );
+
+  const handleConfirmCreatePassword = useCallback(async () => {
+    const trimmed = createPasswordInput.trim();
+    if (!trimmed) {
+      setCreatePasswordError("Password is required.");
+      return;
+    }
+    setShowCreatePasswordModal(false);
+    setCreatePasswordError(null);
+    await submitCreateQuote(trimmed);
+  }, [createPasswordInput, submitCreateQuote]);
 
   return (
     <div
@@ -134,16 +323,7 @@ export function QuotationEditor() {
       className="quotation-doc min-h-[100dvh] min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100/90 pb-[max(4rem,calc(env(safe-area-inset-bottom)+3rem))] pt-[max(1.25rem,env(safe-area-inset-top))] text-[#303030] sm:pb-20 sm:pt-10 print:bg-white print:pb-0 print:pt-0"
     >
       <div className="mx-auto max-w-[52rem] px-3 sm:px-6 print:max-w-none print:px-0">
-        <div className="quotation-doc__toolbar mb-4 flex justify-end print:hidden sm:mb-6">
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="min-h-12 w-full shrink-0 rounded-lg bg-[#003F73] px-5 text-sm font-semibold tracking-wide text-white shadow-md shadow-[#003F73]/25 transition-[transform,box-shadow,opacity] duration-200 hover:opacity-[0.96] hover:shadow-lg active:scale-[0.98] sm:w-auto sm:min-h-0 sm:py-2.5"
-          >
-            打印 / Print
-          </button>
-        </div>
-
+        <form onSubmit={handleCreateQuote}>
         <article className="quotation-doc__sheet rounded-2xl border border-slate-200/90 bg-white px-4 py-8 shadow-[0_4px_44px_-12px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/[0.035] sm:px-10 sm:py-12 print:rounded-none print:border-0 print:px-0 print:py-0 print:shadow-none print:ring-0">
           <header className="border-b border-slate-200/90 pb-8 text-center print:border-slate-300 print:pb-6">
             <h1 className="text-[1.65rem] font-semibold leading-tight tracking-tight text-[#003F73] sm:text-[1.85rem] print:text-[1.5rem]">
@@ -153,6 +333,38 @@ export function QuotationEditor() {
               HealthOptix System
             </p>
           </header>
+
+          {createError ? (
+            <p className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 print:hidden">
+              {createError}
+            </p>
+          ) : null}
+
+          {createdQuote ? (
+            <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-4 text-sm text-[#303030] print:hidden">
+              <p className="font-semibold text-[#003F73]">
+                Quote created: {createdQuote.quote.quoteNo}
+              </p>
+              <p className="mt-1">
+                Customer: {createdQuote.quote.contactName} ({createdQuote.quote.contactEmail})
+              </p>
+              <p className="mt-1">
+                Total: {createdQuote.quote.currency} {createdQuote.quote.total.toFixed(2)}
+              </p>
+              <p className="mt-3 break-all">
+                Signing link:{" "}
+                <a
+                  href={createdQuote.signingUrl}
+                  className="font-medium text-[#003F73] underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {createdQuote.signingUrl}
+                </a>
+              </p>
+              <CreatedQuoteActions signingUrl={createdQuote.signingUrl} />
+            </div>
+          ) : null}
 
           <section className="mt-8 rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50/95 to-white p-4 shadow-sm sm:mt-10 sm:p-7 print:mt-6 print:border-slate-300 print:bg-white print:shadow-none">
         <div className="space-y-1.5 text-[15px] leading-relaxed sm:space-y-1">
@@ -176,25 +388,59 @@ export function QuotationEditor() {
         </div>
 
         <div className="mt-6 border-t border-slate-200 pt-4">
-          <Field label="Bill To / 客户名称">
+          <Field label="Company / 客户公司">
             <input
               type="text"
               value={billTo}
-              onChange={(e) => setBillTo(e.target.value)}
+              onChange={(e) => {
+                setBillTo(e.target.value);
+                setCompanyName(e.target.value);
+              }}
               className={inputLine}
               autoComplete="off"
               aria-label="Bill To / 客户名称"
+              required
+            />
+          </Field>
+          <Field label="Contact Person / 联系人">
+            <input
+              type="text"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              className={inputLine}
+              autoComplete="name"
+              aria-label="Contact name"
+              required
+            />
+          </Field>
+          <Field label="Contact Email / 邮箱">
+            <input
+              type="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              className={inputLine}
+              autoComplete="email"
+              aria-label="Contact email"
+              required
+            />
+          </Field>
+          <Field label="Contact Phone / 电话">
+            <input
+              type="text"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              className={inputLine}
+              autoComplete="tel"
+              aria-label="Contact phone"
             />
           </Field>
           <Field label="Quotation No. / 报价编号">
-            <input
-              type="text"
-              value={quoteNo}
-              onChange={(e) => setQuoteNo(e.target.value)}
-              className={inputLine}
-              autoComplete="off"
+            <div
+              className={`${inputLine} flex items-center border-slate-400/45 text-[#303030]/80`}
               aria-label="Quotation number"
-            />
+            >
+              {createdQuote?.quote.quoteNo || "Auto-generated on create / 创建后自动生成"}
+            </div>
           </Field>
           <Field label="Date / 日期">
             <input
@@ -620,364 +866,77 @@ export function QuotationEditor() {
         </li>
       </ul>
 
-      <SectionTitle>PAYMENT TERMS / 付款条款</SectionTitle>
-      <ul className="mt-4 list-disc space-y-2.5 pl-5 text-[15px] leading-relaxed marker:text-[#003F73]">
-        <li>Full payment before system deployment — 系统上线前需全额付款</li>
-        <li>
-          Payment via bank transfer / PayNow — 支持银行转账 / PayNow
-        </li>
-      </ul>
-      <div className="mt-4 rounded-xl border border-slate-200/85 bg-slate-50/40 p-4 text-[15px] leading-relaxed sm:p-5 print:border-slate-300 print:bg-neutral-50">
-        <p className="text-sm font-semibold text-[#003F73]">
-          Bank account details / 银行账号明细
-        </p>
-        <div className="mt-3 space-y-1.5 text-[#303030]">
-          <p>
-            <span className="text-[#303030]/65">Bank:</span> OCBC Bank
-          </p>
-          <p>
-            <span className="text-[#303030]/65">Account number:</span>{" "}
-            595663725001
-          </p>
-          <p>
-            <span className="text-[#303030]/65">UEN:</span> 202333694H
-          </p>
-        </div>
-      </div>
+      <QuotationStandardClauses />
 
-      <SectionTitle>TERMS AND CONDITIONS</SectionTitle>
-      <ol className="quotation-doc__terms mt-6 list-decimal space-y-7 pl-4 text-[15px] leading-relaxed marker:font-semibold marker:text-[#003F73] sm:space-y-8 sm:pl-6 print:space-y-5 print:text-[12.5px] print:leading-snug">
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Installation and Acceptance / 安装与验收
-          </p>
-          <p className="mt-2">
-            HealthOptix shall configure and deploy the system. Upon completion,
-            the Client shall confirm acceptance.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            HealthOptix 负责系统配置与部署，完成后客户确认验收。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Scope of System / 系统范围
-          </p>
-          <p className="mt-2">
-            The system provided includes only the modules and services specified
-            in this quotation. Any additional features, integrations, or
-            customization will be separately scoped and quoted.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            本系统仅包含报价单所列内容，额外功能或定制将另行报价。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            System Nature / 系统性质
-          </p>
-          <p className="mt-2">
-            The HealthOptix System is an operations and data management
-            platform for health and wellness businesses. It does not provide
-            medical advice, diagnosis, or treatment decisions.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            本系统为运营与数据管理工具，不涉及医疗诊断或治疗决策。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Subscription Period / 订阅周期
-          </p>
-          <p className="mt-2">
-            For cloud-based services, the system is provided on a subscription
-            basis unless otherwise stated. The Client is responsible for timely
-            renewal to maintain system access.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            云系统为订阅制，客户需按时续费以保持使用权限。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Payment Terms / 付款条款
-          </p>
-          <p className="mt-2">
-            Full payment must be made prior to system deployment unless
-            otherwise agreed. HealthOptix reserves the right to suspend services
-            in the event of non-payment.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            系统上线前需付全款，逾期可能暂停服务。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">Warranty / 保修与保障</p>
-          <p className="mt-2">
-            HealthOptix provides a{" "}
-            <span className="font-semibold text-[#002244] print:text-black">
-              12-month warranty
-            </span>{" "}
-            for its software from the date of deployment, covering defects under
-            normal use. This warranty applies to software only. Hardware (if any)
-            is subject to the respective manufacturer&apos;s warranty.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            HealthOptix 对软件系统提供自上线之日起{" "}
-            <span className="font-semibold text-[#002244] print:text-black">
-              12 个月保修
-            </span>
-            ，适用于正常使用情况下的系统问题。本保修仅适用于软件，硬件（如有）按供应商保修条款执行。
-          </p>
-          <p className="mt-2">
-            The warranty excludes issues arising from misuse, unauthorized
-            modifications, third-party systems, or infrastructure failures.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            以下情况不在保修范围内：非正常使用、未经授权的修改、第三方系统或基础设施问题。
-          </p>
-          <p className="mt-3 font-medium text-[#003F73]">
-            Post-Warranty Support / 保修期后支持
-          </p>
-          <div className={`${postWarrantyRateBlock} mt-2`}>
-            <p>Onsite support is available upon request and chargeable as follows:</p>
-            <p>Weekdays (9am–6pm): SGD 100 per visit</p>
-            <p>Weekdays (6pm–12am): SGD 150 per visit</p>
-            <p>Weekends / Public Holidays: SGD 200 per visit</p>
-          </div>
-          <div className={`${postWarrantyRateBlock} mt-3`}>
-            <p>保修期后现场支持按次收费：</p>
-            <p>工作日（9:00–18:00）SGD 100 / 次</p>
-            <p>工作日（18:00–24:00）SGD 150 / 次</p>
-            <p>周末及公共假期 SGD 200 / 次</p>
-          </div>
-          <div className={`${postWarrantyRateBlock} mt-3`}>
-            <p>Fees exclude repair, replacement, or third-party costs.</p>
-            <p>以上费用不包含维修、更换或第三方成本。</p>
-          </div>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Support and Maintenance / 技术支持与维护
-          </p>
-          <p className="mt-2">
-            Standard support includes system troubleshooting, minor updates,
-            and bug fixes.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            标准支持包括系统问题处理、小规模更新及缺陷修复。
-          </p>
-          <p className="mt-2">
-            Additional services, including customization, major configuration
-            changes, and onsite support, may be subject to additional charges.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            定制开发、重大配置调整及现场支持等服务可能另行收费。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Data Setup and Configuration / 数据与配置
-          </p>
-          <p className="mt-2">
-            Initial data setup (if applicable) will be performed based on data
-            provided by the Client. The Client is responsible for ensuring data
-            accuracy.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            初始数据由客户提供，客户需确保数据准确性。
-          </p>
-          <p className="mt-2">
-            Subsequent data updates or reconfiguration may be chargeable.
-          </p>
-          <p className="mt-2 text-[#303030]/90">后续数据处理可能收费。</p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Data Ownership and Responsibility / 数据归属与责任
-          </p>
-          <p className="mt-2">
-            All patient and customer data remain the property of the Client. The
-            Client is responsible for compliance with applicable laws.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            数据归客户所有，客户负责合法使用。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Data Protection (PDPA Compliance) / 数据保护
-          </p>
-          <p className="mt-2">
-            HealthOptix complies with the Personal Data Protection Act (PDPA) of
-            Singapore.
-          </p>
-          <p className="mt-2 text-[#303030]/90">HealthOptix 遵循 PDPA 法规。</p>
-          <p className="mt-2">
-            HealthOptix will not access or use data except for system support
-            with the Client&apos;s prior consent.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            除经客户事先同意用于系统支持外，HealthOptix 不会访问或使用任何数据。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">Data Backup / 数据备份</p>
-          <p className="mt-2">
-            HealthOptix performs regular system backups on a best-effort basis.
-            However, the Client is responsible for maintaining their own backup
-            if required.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            系统提供备份，但客户需自行保留必要备份。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            System Availability / 系统可用性
-          </p>
-          <p className="mt-2">
-            HealthOptix shall use reasonable efforts to maintain system
-            availability on a 24/7 basis, except for planned maintenance and
-            events beyond its control. However, uninterrupted or error-free
-            operation cannot be guaranteed.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            HealthOptix
-            将在合理范围内尽力维持系统全天候（24/7）运行，但不包括计划内维护及其无法控制的情形，亦无法保证系统持续无中断或无错误运行。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Resource Usage / Fair Usage
-          </p>
-          <p className="mt-2">
-            The subscription includes reasonable usage of system resources,
-            including storage and bandwidth, under normal business operations.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            本订阅费用已包含在正常业务使用范围内的系统资源（包括存储与带宽）。
-          </p>
-          <p className="mt-2">
-            HealthOptix reserves the right to monitor system usage to ensure
-            fair and appropriate use of the platform. In the event of excessive
-            or abnormal usage (including but not limited to unusually high media
-            uploads, downloads, or streaming activities), HealthOptix may:
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            HealthOptix 有权对系统使用情况进行监控，以确保平台的合理与公平使用。如出现异常或过度使用情况（包括但不限于大量视频或音频上传、下载或频繁播放等），HealthOptix 有权：
-          </p>
-          <p className="mt-2">
-            (a) recommend an upgrade to a higher subscription plan;
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            （a）建议客户升级至更高订阅方案；
-          </p>
-          <p className="mt-2">(b) impose reasonable usage limitations; or</p>
-          <p className="mt-2 text-[#303030]/90">（b）实施合理的使用限制；或</p>
-          <p className="mt-2">
-            (c) take necessary measures to maintain system performance and
-            stability.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            （c）采取必要措施以确保系统性能与稳定性。
-          </p>
-          <p className="mt-2">
-            The platform is not intended for large-scale media hosting or
-            distribution beyond normal operational use.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            本平台并非用于大规模媒体存储或分发用途。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Non-Transferability / 不可转让
-          </p>
-          <p className="mt-2">
-            The system license is non-transferable without prior written
-            consent.
-          </p>
-          <p className="mt-2 text-[#303030]/90">系统授权不可转让。</p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">Non-Refundable / 不可退款</p>
-          <p className="mt-2">
-            All payments made are non-refundable once services have commenced.
-          </p>
-          <p className="mt-2 text-[#303030]/90">服务开始后费用不退款。</p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Missed Appointments / 延误与重约
-          </p>
-          <p className="mt-2">
-            If system deployment or setup is delayed due to Client-side readiness
-            issues (e.g. no internet, incomplete setup), additional charges may
-            apply.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            如果由于客户端准备问题（例如没有互联网、设置不完整）导致系统部署或设置延迟，则可能需要支付额外费用。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Limitation of Liability / 责任限制
-          </p>
-          <p className="mt-2">
-            HealthOptix shall not be liable for any indirect or consequential
-            damages, including loss of revenue, loss of business, data loss, or
-            system interruption.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            HealthOptix
-            不对任何间接或后果性损失承担责任，包括但不限于收入损失、业务损失、数据丢失或系统中断。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">
-            Responsibility &amp; Liability / 责任归属与免责
-          </p>
-          <p className="mt-2">
-            The Client shall be responsible for any claims, losses or
-            liabilities arising from the Client&apos;s misuse of the system or
-            breach of its obligations, and HealthOptix shall not be liable for
-            such matters.
-          </p>
-          <p className="mt-2 text-[#303030]/90">
-            因客户对系统的不当使用或违反其义务所引起的任何索赔、损失或责任，由客户自行承担，HealthOptix
-            对此不承担责任。
-          </p>
-        </li>
-        <li>
-          <p className="font-semibold text-[#003F73]">Data Disclosure / 数据披露</p>
-          <p className="mt-2">
-            HealthOptix may disclose data if required by law or authorities.
-          </p>
-          <p className="mt-2 text-[#303030]/90">如法律要求，可能披露数据。</p>
-        </li>
-      </ol>
-
-      <SectionTitle>ACCEPTANCE / 确认签署</SectionTitle>
-      <div className="mt-6 space-y-5 text-[15px] print:mt-8">
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-1 print:break-inside-avoid">
-          <span className="shrink-0 text-[#303030]/85">Signature / 签名：</span>
-          <span className="min-h-[2rem] min-w-48 flex-1 border-b-2 border-slate-600/90 print:min-w-64 print:border-black" />
-        </div>
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-1 print:break-inside-avoid">
-          <span className="shrink-0 text-[#303030]/85">Name / 姓名：</span>
-          <span className="min-h-[2rem] min-w-48 flex-1 border-b-2 border-slate-600/90 print:min-w-64 print:border-black" />
-        </div>
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-1 print:break-inside-avoid">
-          <span className="shrink-0 text-[#303030]/85">Date / 日期：</span>
-          <span className="min-h-[2rem] min-w-40 flex-1 border-b-2 border-slate-600/90 print:min-w-56 print:border-black" />
-        </div>
+      <div className="mt-10 flex justify-end print:hidden">
+        <button
+          type="submit"
+                  disabled={creating}
+          className="min-h-12 w-full rounded-lg bg-[#003F73] px-5 text-sm font-semibold tracking-wide text-white shadow-md shadow-[#003F73]/25 transition-[transform,box-shadow,opacity] duration-200 hover:opacity-[0.96] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-h-0 sm:py-2.5"
+        >
+          {creating ? "Creating… / 创建中…" : "Create Quote / 创建报价"}
+        </button>
       </div>
 
       <p className="mt-14 border-t border-slate-200/80 pt-6 text-center text-[11px] text-[#303030]/65 print:mt-10 print:border-slate-300 print:pt-4">
         Template version aligned with internal quotation document (April 2026).
       </p>
         </article>
+        </form>
+        {showCreatePasswordModal ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 print:hidden">
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
+              <h3 className="text-base font-semibold text-[#003F73]">
+                Create Quotation
+              </h3>
+              <p className="mt-2 text-sm text-[#303030]/75">
+                Enter the authorization password to create this quotation.
+              </p>
+              <label className="mt-4 block text-sm font-medium text-[#003F73]">
+                Authorization Password
+                <input
+                  type="password"
+                  autoFocus
+                  placeholder="Enter password"
+                  value={createPasswordInput}
+                  onChange={(e) => setCreatePasswordInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleConfirmCreatePassword();
+                    }
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setShowCreatePasswordModal(false);
+                    }
+                  }}
+                  className="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50/45 px-3 py-2.5 text-[15px] text-[#303030] outline-none transition-[border-color,box-shadow] focus:border-[#003F73] focus:ring-2 focus:ring-[#003F73]/20"
+                />
+              </label>
+              {createPasswordError ? (
+                <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+                  {createPasswordError}
+                </p>
+              ) : null}
+              <div className="mt-5 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePasswordModal(false)}
+                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-[#303030] transition-colors hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleConfirmCreatePassword()}
+                  className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#003F73] px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-[#003F73]/20 transition-opacity hover:opacity-[0.95]"
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
