@@ -31,6 +31,8 @@ function formatMoney(currency: string, value: number): string {
   })}`;
 }
 
+const ANNUAL_SUBSCRIPTION_FEE = 999;
+
 export type QuotationReadonlyPlan = {
   id: string;
   name: string;
@@ -231,7 +233,7 @@ export function QuotationReadonlyDocument({
                   {quote.currency}
                 </span>
                 <span className="block min-w-[6rem] flex-1 py-0.5 text-right text-[15px] font-semibold tabular-nums text-[#003F73]">
-                  {formatMoney(quote.currency, quote.total)}
+                  {formatMoney(quote.currency, ANNUAL_SUBSCRIPTION_FEE)}
                 </span>
                 <span className="shrink-0 pb-0.5 text-sm text-[#303030]/75">/ year</span>
               </div>
