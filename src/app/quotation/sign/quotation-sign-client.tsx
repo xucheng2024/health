@@ -241,13 +241,6 @@ export function QuotationSignClient({ token }: { token: string }) {
               >
                 Download Signed PDF
               </a>
-              <a
-                href={pdfHref}
-                download
-                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[#003F73]/25 bg-white px-4 py-2 text-sm font-semibold text-[#003F73] transition-colors hover:bg-slate-50"
-              >
-                Save File
-              </a>
             </div>
           </section>
         ) : null}

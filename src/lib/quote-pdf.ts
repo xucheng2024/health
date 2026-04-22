@@ -18,7 +18,9 @@ const PAGE_TOP = 800;
 const PAGE_BOTTOM = 52;
 const TITLE_COLOR = rgb(0.0, 0.25, 0.45);
 const BODY_COLOR = rgb(0.1, 0.14, 0.2);
+const MUTED_COLOR = rgb(0.34, 0.39, 0.46);
 const FOOTER_COLOR = rgb(0.4, 0.44, 0.5);
+const ANNUAL_SUBSCRIPTION_FEE = 999;
 
 function formatMoney(currency: string, value: number): string {
   return `${currency} ${value.toLocaleString("en-SG", {
@@ -153,65 +155,105 @@ export async function generateSignedQuotePdfBuffer(params: {
   };
 
   const sectionTitle = (title: string) => {
-    writeLine(title, { size: 12, bold: true, color: TITLE_COLOR, gapAfter: 2 });
+    writeLine(title, { size: 12, bold: true, color: TITLE_COLOR, gapAfter: 3 });
   };
 
-  writeLine("SIGNED QUOTATION", {
+  const writeDivider = (gapTop = 4, gapBottom = 8) => {
+    y -= gapTop;
+    ensureSpace(8);
+    page.drawLine({
+      start: { x: MARGIN_X, y },
+      end: { x: page.getWidth() - MARGIN_X, y },
+      color: rgb(0.86, 0.89, 0.93),
+      thickness: 1,
+    });
+    y -= gapBottom;
+  };
+
+  const writeKeyValue = (label: string, value: string) => {
+    writeLine(`${label}: ${value}`, { size: 10, gapAfter: 1 });
+  };
+
+  writeLine("QUOTATION / 报价单", {
     size: 20,
     bold: true,
     color: TITLE_COLOR,
     gapAfter: 2,
   });
-  writeLine(`Quotation No: ${record.quote.quoteNo}`, { size: 11 });
-  writeLine(`Status: ${record.quote.status.toUpperCase()}`, { size: 11, gapAfter: 8 });
+  writeLine("HealthOptix System", { size: 11, color: MUTED_COLOR, gapAfter: 4 });
+  writeKeyValue("Quotation No", record.quote.quoteNo);
+  writeKeyValue("Status", record.quote.status.toUpperCase());
+  writeDivider();
 
   const signerName = record.signature?.signerName ?? record.quote.contactName;
   const signedAt = record.quote.signedAt ?? record.signature?.createdAt ?? "";
   const documentHash = record.signature?.signedDocumentHash ?? "";
 
   sectionTitle("Parties");
-  for (const line of [
-    `Company: ${record.quote.companyName}`,
-    `Contact: ${record.quote.contactName}`,
-    `Email: ${record.quote.contactEmail}`,
-    `Phone: ${record.quote.contactPhone || "-"}`,
-  ]) {
-    writeWrapped(line, { size: 10 });
-  }
-  y -= 8;
+  writeKeyValue("Company", record.quote.companyName);
+  writeKeyValue("Contact", record.quote.contactName);
+  writeKeyValue("Email", record.quote.contactEmail);
+  writeKeyValue("Phone", record.quote.contactPhone || "-");
+  writeDivider();
 
-  sectionTitle("Package");
-  writeWrapped(`Plan ID: ${record.quote.planId} | Plan: ${plan.name}`, { size: 10 });
-  writeWrapped(plan.description || "Custom package from quotation table.", { size: 10 });
-  y -= 8;
+  sectionTitle("PLAN & PRICING / 方案与价格");
+  writeKeyValue("Plan ID", record.quote.planId);
+  writeKeyValue("Plan Name", plan.name);
+  writeWrapped(plan.description || "Custom package from quotation table.", {
+    size: 10,
+    color: MUTED_COLOR,
+  });
+  writeDivider();
 
   sectionTitle("Line Items");
+  writeLine("Item | Qty | Unit | Amount", {
+    size: 9,
+    bold: true,
+    color: MUTED_COLOR,
+    gapAfter: 3,
+  });
   for (const row of collectLineItems(record, snapshot)) {
     writeWrapped(
-      `${row.title}  |  Qty ${row.qty}  |  Unit ${formatMoney(
+      `${row.title} | ${row.qty} | ${formatMoney(
         record.quote.currency,
         row.unitPrice,
-      )}  |  Amount ${formatMoney(record.quote.currency, row.amount)}`,
-      { size: 10, gapAfter: 2 },
+      )} | ${formatMoney(record.quote.currency, row.amount)}`,
+      { size: 10, gapAfter: 3 },
     );
   }
-  y -= 6;
+  writeDivider();
 
   sectionTitle("Financials");
-  writeLine(`Subtotal: ${formatMoney(record.quote.currency, record.quote.subtotal)}`);
+  writeKeyValue("Subtotal", formatMoney(record.quote.currency, record.quote.subtotal));
   if (record.quote.taxRate > 0 || record.quote.taxAmount > 0) {
-    writeLine(
-      `Tax (${record.quote.taxRate}%): ${formatMoney(record.quote.currency, record.quote.taxAmount)}`,
+    writeKeyValue(
+      `Tax (${record.quote.taxRate}%)`,
+      formatMoney(record.quote.currency, record.quote.taxAmount),
     );
   }
-  writeLine(`Total: ${formatMoney(record.quote.currency, record.quote.total)}`, { gapAfter: 8 });
+  writeLine(`Total: ${formatMoney(record.quote.currency, record.quote.total)}`, {
+    bold: true,
+    size: 11,
+    color: TITLE_COLOR,
+  });
+  writeDivider();
+
+  sectionTitle("SUBSCRIPTION (IF APPLICABLE) / 系统订阅费用（如适用）");
+  writeWrapped("Annual subscription fee — 每年系统订阅费", { size: 10, color: MUTED_COLOR });
+  writeLine(`${formatMoney(record.quote.currency, ANNUAL_SUBSCRIPTION_FEE)} / year`, {
+    size: 11,
+    bold: true,
+    color: TITLE_COLOR,
+  });
+  writeDivider();
 
   sectionTitle("Signature");
-  writeLine(`Signer: ${signerName}`);
-  writeLine(`Signed At: ${signedAt}`);
+  writeKeyValue("Signer", signerName);
+  writeKeyValue("Signed At", signedAt);
   writeWrapped(`Document Hash (SHA-256): ${documentHash || "-"}`, {
     size: 9,
-    gapAfter: 8,
+    color: MUTED_COLOR,
+    gapAfter: 6,
   });
 
   if (record.signature?.signatureData) {
@@ -240,6 +282,7 @@ export async function generateSignedQuotePdfBuffer(params: {
       y -= sigH + 24;
     }
   }
+  writeDivider();
 
   sectionTitle("Terms Snapshot (full)");
   const legal = renderLegalTermsParagraphs(
