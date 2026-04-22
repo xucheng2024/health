@@ -22,7 +22,6 @@ type SignApiQuote = {
   currency: string;
   unitPrice: number;
   qty: number;
-  discount: number;
   taxRate: number;
   subtotal: number;
   taxAmount: number;
@@ -243,8 +242,12 @@ export function QuotationSignClient({ token }: { token: string }) {
                 onClick={handleSavePdf}
                 className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#003F73] px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-[#003F73]/20 transition-opacity hover:opacity-[0.95]"
               >
-                Save as PDF
+                Print / Save as PDF
               </button>
+              <p className="w-full text-xs text-[#303030]/70">
+                For best results, open this page in a browser (Chrome/Safari) and use the print dialog to save as PDF.
+                / 建议在浏览器（Chrome/Safari）中打开此页面，再通过打印面板保存为 PDF。
+              </p>
             </div>
           </section>
         ) : null}

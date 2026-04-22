@@ -50,7 +50,6 @@ export type QuotationReadonlyQuote = {
   currency: string;
   unitPrice: number;
   qty: number;
-  discount: number;
   taxRate: number;
   subtotal: number;
   taxAmount: number;
@@ -73,7 +72,7 @@ export function QuotationReadonlyDocument({
   planTermsSummary,
   legalTermsText,
 }: QuotationReadonlyProps) {
-  const lineAmount = quote.unitPrice * quote.qty - quote.discount;
+  const lineAmount = quote.unitPrice * quote.qty;
   const showTax = quote.taxRate > 0 || quote.taxAmount > 0;
   const legalTermsParagraphs = legalTermsText
     ? renderLegalTermsParagraphs(legalTermsText)
@@ -161,12 +160,6 @@ export function QuotationReadonlyDocument({
                 <span className="text-[#303030]/70">Unit price / 单价</span>
                 <p className="mt-1 font-semibold tabular-nums">
                   {formatMoney(quote.currency, quote.unitPrice)}
-                </p>
-              </div>
-              <div>
-                <span className="text-[#303030]/70">Discount / 折扣</span>
-                <p className="mt-1 font-semibold tabular-nums">
-                  {formatMoney(quote.currency, quote.discount)}
                 </p>
               </div>
               <div>

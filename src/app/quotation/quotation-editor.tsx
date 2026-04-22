@@ -286,11 +286,6 @@ export function QuotationEditor() {
 
         const created = data as CreatedQuoteResult;
         setCreatedQuote(created);
-        if (typeof window !== "undefined") {
-          window.requestAnimationFrame(() => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          });
-        }
         return { ok: true };
       } catch {
         const error = "Network error while creating quotation.";
