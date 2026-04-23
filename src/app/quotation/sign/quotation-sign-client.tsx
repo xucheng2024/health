@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QuotationDocument } from "@/components/quotation/quotation-document";
 import { QuotationSignaturePad } from "@/components/quotation/quotation-signature-pad";
 import { formatSingaporeDateTime } from "@/lib/datetime";
@@ -78,6 +78,7 @@ export function QuotationSignClient({ token }: { token: string }) {
   const [signature, setSignature] = useState<string | null>(null);
   const [signatureBlank, setSignatureBlank] = useState(true);
   const [justSigned, setJustSigned] = useState(false);
+  const hasAutoPrintedRef = useRef(false);
 
   const onSignatureChange = useCallback((dataUrl: string | null, blank: boolean) => {
     setSignature(dataUrl);
@@ -111,13 +112,18 @@ export function QuotationSignClient({ token }: { token: string }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (hasAutoPrintedRef.current) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("autoprint") !== "1") return;
+    // Wait until quotation payload is ready, otherwise mobile print captures
+    // only the loading state and produces a tiny/blank preview.
+    if (loading || !payload) return;
+    hasAutoPrintedRef.current = true;
     const timer = window.setTimeout(() => {
       window.print();
-    }, 250);
+    }, 300);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [loading, payload]);
 
   const readonlyProps = useMemo(() => {
     if (!payload) return null;
