@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { QuotationDocument } from "@/components/quotation/quotation-document";
 import { QuotationSignaturePad } from "@/components/quotation/quotation-signature-pad";
+import { formatSingaporeDateTime } from "@/lib/datetime";
 
 type Plan = {
   id: string;
@@ -107,6 +108,16 @@ export function QuotationSignClient({ token }: { token: string }) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("autoprint") !== "1") return;
+    const timer = window.setTimeout(() => {
+      window.print();
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const readonlyProps = useMemo(() => {
     if (!payload) return null;
     return {
@@ -119,9 +130,30 @@ export function QuotationSignClient({ token }: { token: string }) {
   }, [payload]);
 
   const handleSavePdf = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.print();
+    if (typeof window === "undefined") return;
+
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isMobile =
+      /iphone|ipad|ipod|android|mobile/.test(ua);
+    const isInAppBrowser =
+      /micromessenger|qq\/|qqbrowser|mqqbrowser|weibo|line\//.test(ua);
+
+    // Mobile/in-app browsers often block print dialogs in the current tab.
+    // Open a fresh tab with autoprint to improve compatibility.
+    if (isMobile || isInAppBrowser) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("autoprint", "1");
+      const popup = window.open(url.toString(), "_blank", "noopener,noreferrer");
+      if (!popup) {
+        // Popup blocked: fall back to opening the print mode in current page.
+        window.location.assign(url.toString());
+        return;
+      }
+      popup.focus();
+      return;
     }
+
+    window.print();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -218,7 +250,7 @@ export function QuotationSignClient({ token }: { token: string }) {
               </div>
               <div className="flex flex-wrap gap-x-2">
                 <dt className="font-medium text-[#003F73]">Signed at / 签署时间</dt>
-                <dd>{new Date(signed.signedAt).toLocaleString("en-SG")}</dd>
+                <dd>{formatSingaporeDateTime(signed.signedAt)}</dd>
               </div>
               {signed.documentHash ? (
                 <div className="flex flex-wrap gap-x-2 break-all">
@@ -247,6 +279,8 @@ export function QuotationSignClient({ token }: { token: string }) {
               <p className="w-full text-xs text-[#303030]/70">
                 For best results, open this page in a browser (Chrome/Safari) and use the print dialog to save as PDF.
                 / 建议在浏览器（Chrome/Safari）中打开此页面，再通过打印面板保存为 PDF。
+                Some mobile/in-app browsers will open a new page to start printing.
+                / 某些手机或应用内浏览器会先打开新页面再触发打印。
               </p>
             </div>
           </section>

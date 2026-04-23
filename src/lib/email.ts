@@ -1,6 +1,7 @@
 import type { QuoteRecord } from "@/lib/types";
 import { getPlanById } from "@/data/plans";
 import { signingPageUrl } from "@/lib/site-url";
+import { formatSingaporeDateTime } from "@/lib/datetime";
 
 type EmailPayload = {
   to: string;
@@ -47,13 +48,14 @@ async function sendViaResend(payload: EmailPayload): Promise<void> {
 export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> {
   const plan = getPlanById(record.quote.planId);
   const signedAt = record.quote.signedAt ?? record.quote.updatedAt;
+  const signedAtDisplay = formatSingaporeDateTime(signedAt);
   const expiresAt = record.quote.signingTokenExpiresAt;
   const total = `${record.quote.currency} ${record.quote.total.toFixed(2)}`;
   const signerName =
     record.signature?.signerName ?? record.quote.contactName;
   const viewUrl = signingPageUrl(record.quote.signingToken);
   const expiryText = expiresAt
-    ? `This secure link is valid until ${new Date(expiresAt).toLocaleString("en-SG")} (Singapore time).`
+    ? `This secure link is valid until ${formatSingaporeDateTime(expiresAt)} (Singapore time).`
     : "This secure link has a limited validity period.";
 
   const customerHtml = `
@@ -65,7 +67,7 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
       <li>Plan: ${escapeHtml(plan?.name ?? record.quote.planId)}</li>
       <li>Total: ${escapeHtml(total)}</li>
       <li>Signer: ${escapeHtml(signerName)}</li>
-      <li>Signed At: ${escapeHtml(signedAt)}</li>
+      <li>Signed At: ${escapeHtml(signedAtDisplay)} (Singapore time)</li>
     </ul>
     <p><a href="${escapeHtml(viewUrl)}">View signed quotation</a></p>
     <p>${escapeHtml(expiryText)}</p>
@@ -83,7 +85,7 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
       <li>Quotation No: ${escapeHtml(record.quote.quoteNo)}</li>
       <li>Total: ${escapeHtml(total)}</li>
       <li>Signer: ${escapeHtml(signerName)}</li>
-      <li>Signed At: ${escapeHtml(signedAt)}</li>
+      <li>Signed At: ${escapeHtml(signedAtDisplay)} (Singapore time)</li>
       <li>Quote ID: ${escapeHtml(record.quote.id)}</li>
       <li>Signing page: <a href="${escapeHtml(viewUrl)}">${escapeHtml(viewUrl)}</a></li>
       <li>Signed PDF: available from the signing page after opening the link above.</li>
@@ -114,7 +116,7 @@ export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<vo
   const total = `${record.quote.currency} ${record.quote.total.toFixed(2)}`;
   const viewUrl = signingPageUrl(record.quote.signingToken);
   const expiryText = expiresAt
-    ? `This secure link is valid until ${new Date(expiresAt).toLocaleString("en-SG")} (Singapore time).`
+    ? `This secure link is valid until ${formatSingaporeDateTime(expiresAt)} (Singapore time).`
     : "This secure link has a limited validity period.";
 
   const customerHtml = `

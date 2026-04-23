@@ -1,6 +1,5 @@
 import { QuotationStandardClauses } from "./quotation-standard-clauses";
 import { SectionTitle } from "./quotation-doc-primitives";
-import { renderLegalTermsParagraphs } from "@/lib/quotation-legal-terms";
 
 const readout =
   "flex min-h-11 min-w-0 flex-1 items-center justify-end border-b-2 border-slate-700/55 bg-slate-50/30 px-1 py-2 text-base tabular-nums text-[#303030] sm:min-h-0 sm:justify-start sm:text-left sm:text-[15px]";
@@ -55,6 +54,7 @@ export type QuotationReadonlyQuote = {
   taxAmount: number;
   total: number;
   createdAt: string;
+  signingTokenExpiresAt?: string | null;
 };
 
 export type QuotationReadonlyProps = {
@@ -72,11 +72,9 @@ export function QuotationReadonlyDocument({
   planTermsSummary,
   legalTermsText,
 }: QuotationReadonlyProps) {
+  void legalTermsText;
   const lineAmount = quote.unitPrice * quote.qty;
   const showTax = quote.taxRate > 0 || quote.taxAmount > 0;
-  const legalTermsParagraphs = legalTermsText
-    ? renderLegalTermsParagraphs(legalTermsText)
-    : [];
 
   return (
     <div className="quotation-doc min-h-[100dvh] min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100/90 pb-[max(4rem,calc(env(safe-area-inset-bottom)+3rem))] pt-[max(1.25rem,env(safe-area-inset-top))] text-[#303030] sm:pb-20 sm:pt-10">
@@ -121,6 +119,16 @@ export function QuotationReadonlyDocument({
               <ReadonlyField
                 label="Date / 日期"
                 value={new Date(quote.createdAt).toLocaleDateString("en-SG")}
+              />
+              <ReadonlyField
+                label="Valid Until / 有效期至"
+                value={
+                  quote.signingTokenExpiresAt
+                    ? new Date(quote.signingTokenExpiresAt).toLocaleDateString("en-SG", {
+                        timeZone: "Asia/Singapore",
+                      })
+                    : "—"
+                }
               />
               <ReadonlyField label="Contact name / 联系人" value={quote.contactName} />
               <ReadonlyField label="Email / 邮箱" value={quote.contactEmail} />
@@ -233,18 +241,7 @@ export function QuotationReadonlyDocument({
             </li>
           </ul>
 
-          {legalTermsParagraphs.length ? (
-            <>
-              <SectionTitle>TERMS AND CONDITIONS</SectionTitle>
-              <div className="mt-6 space-y-3 text-[15px] leading-relaxed text-[#303030]">
-                {legalTermsParagraphs.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-            </>
-          ) : (
-            <QuotationStandardClauses />
-          )}
+          <QuotationStandardClauses />
 
           <p className="mt-10 border-t border-slate-200/80 pt-6 text-center text-[11px] text-[#303030]/65">
             Online quotation — template aligned with HealthOptix standard (April 2026).

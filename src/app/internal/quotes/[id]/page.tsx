@@ -2,8 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopySignLinkButton } from "@/app/internal/quotes/copy-sign-link-button";
 import { ResendButton } from "@/app/internal/quotes/resend-button";
+import { QuotationDocument } from "@/components/quotation/quotation-document";
+import { getPlanById } from "@/data/plans";
+import { formatSingaporeDateTime } from "@/lib/datetime";
 import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/internal-auth";
-import { getQuoteRecordForAdmin } from "@/lib/quotes";
+import { getQuoteRecordForAdmin, getQuoteSnapshotByQuoteId } from "@/lib/quotes";
 
 export const metadata = {
   title: "Quotation Detail | HealthOptix",
@@ -37,6 +40,34 @@ export default async function InternalQuoteDetailPage({
   if (!record) return notFound();
 
   const q = record.quote;
+  const snapshot = q.status === "signed" ? await getQuoteSnapshotByQuoteId(q.id) : null;
+  const plan = getPlanById(q.planId);
+  const effectivePlan = snapshot
+    ? {
+        id: snapshot.planId,
+        name: snapshot.planName,
+        description: snapshot.planDescription,
+        features: snapshot.planFeatures,
+      }
+    : {
+        id: q.planId,
+        name: plan?.name ?? q.planId,
+        description: plan?.description ?? "",
+        features: plan?.features ?? [],
+      };
+  const statusLabel =
+    q.status === "draft"
+      ? "Draft / 草稿"
+      : q.status === "sent"
+        ? "Sent — awaiting signature / 已发送，待签署"
+        : q.status === "signed"
+          ? "Signed / 已签署"
+          : q.status === "expired"
+            ? "Expired / 已过期"
+            : "Cancelled / 已取消";
+  const linkExpired =
+    q.status === "expired" ||
+    (q.signingTokenExpiresAt ? new Date(q.signingTokenExpiresAt) < new Date() : false);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100/90 px-4 py-10 text-[#303030] sm:px-8">
@@ -67,25 +98,25 @@ export default async function InternalQuoteDetailPage({
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#303030]/70">Created</dt>
-                <dd>{new Date(q.createdAt).toLocaleString("en-SG")}</dd>
+                <dd>{formatSingaporeDateTime(q.createdAt)}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#303030]/70">Sent</dt>
-                <dd>{q.sentAt ? new Date(q.sentAt).toLocaleString("en-SG") : "—"}</dd>
+                <dd>{q.sentAt ? formatSingaporeDateTime(q.sentAt) : "—"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#303030]/70">Viewed</dt>
-                <dd>{q.viewedAt ? new Date(q.viewedAt).toLocaleString("en-SG") : "—"}</dd>
+                <dd>{q.viewedAt ? formatSingaporeDateTime(q.viewedAt) : "—"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#303030]/70">Signed</dt>
-                <dd>{q.signedAt ? new Date(q.signedAt).toLocaleString("en-SG") : "—"}</dd>
+                <dd>{q.signedAt ? formatSingaporeDateTime(q.signedAt) : "—"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#303030]/70">Link expiry</dt>
                 <dd>
                   {q.signingTokenExpiresAt
-                    ? new Date(q.signingTokenExpiresAt).toLocaleString("en-SG")
+                    ? formatSingaporeDateTime(q.signingTokenExpiresAt)
                     : "—"}
                 </dd>
               </div>
@@ -95,7 +126,11 @@ export default async function InternalQuoteDetailPage({
           <section className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[#003F73]">Actions</h2>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <CopySignLinkButton signingToken={q.signingToken} />
+              <CopySignLinkButton
+                signingToken={q.signingToken}
+                disabled={linkExpired}
+                disabledReason="Signing link expired. Please resend first."
+              />
               <ResendButton quoteId={q.id} />
             </div>
             <p className="mt-3 text-xs text-[#303030]/70">
@@ -122,6 +157,72 @@ export default async function InternalQuoteDetailPage({
               <dd className="mt-0.5 whitespace-pre-wrap">{q.billingAddress || "—"}</dd>
             </div>
           </dl>
+        </section>
+
+        {record.signature ? (
+          <section className="mt-4 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[#003F73]">
+              Signature
+            </h2>
+            <dl className="mt-3 grid gap-y-2 text-sm sm:grid-cols-2 sm:gap-x-8">
+              <div className="flex justify-between gap-4 sm:block">
+                <dt className="text-[#303030]/70">Signer</dt>
+                <dd className="font-medium">{record.signature.signerName}</dd>
+              </div>
+              <div className="flex justify-between gap-4 sm:block">
+                <dt className="text-[#303030]/70">Signed at</dt>
+                <dd className="font-medium">
+                  {formatSingaporeDateTime(q.signedAt ?? record.signature.createdAt)}
+                </dd>
+              </div>
+            </dl>
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={record.signature.signatureData}
+                alt="Signature"
+                className="max-h-36 w-auto object-contain"
+              />
+            </div>
+          </section>
+        ) : null}
+
+        <section className="mt-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-4 py-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[#003F73]">
+              Contract View
+            </h2>
+            <p className="mt-1 text-xs text-[#303030]/70">
+              Read-only quotation content at current/signed state.
+            </p>
+          </div>
+          <div className="max-h-[75vh] overflow-auto">
+            <QuotationDocument
+              mode="readonly"
+              quote={{
+                quoteNo: q.quoteNo,
+                planId: q.planId,
+                status: q.status,
+                companyName: q.companyName,
+                contactName: q.contactName,
+                contactEmail: q.contactEmail,
+                contactPhone: q.contactPhone,
+                currency: q.currency,
+                unitPrice: q.unitPrice,
+                qty: q.qty,
+                taxRate: q.taxRate,
+                subtotal: q.subtotal,
+                taxAmount: q.taxAmount,
+                total: q.total,
+                createdAt: q.createdAt,
+                signingTokenExpiresAt: q.signingTokenExpiresAt,
+              }}
+              plan={effectivePlan}
+              statusLabel={statusLabel}
+              planTermsSummary={snapshot?.planTermsSummary}
+              legalTermsText={snapshot?.legalTermsText}
+            />
+          </div>
         </section>
       </div>
     </div>

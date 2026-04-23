@@ -1,8 +1,26 @@
 import Link from "next/link";
 import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/internal-auth";
 import { listQuotesForAdmin } from "@/lib/quotes";
+import { formatSingaporeDateTime } from "@/lib/datetime";
 import { CopySignLinkButton } from "./copy-sign-link-button";
 import { ResendButton } from "./resend-button";
+
+function formatTtl(expiresAt: string | null): string {
+  if (!expiresAt) return "No expiry";
+  const diffMs = new Date(expiresAt).getTime() - Date.now();
+  const absMs = Math.abs(diffMs);
+  const totalMinutes = Math.floor(absMs / 60000);
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [
+    days > 0 ? `${days}d` : null,
+    hours > 0 ? `${hours}h` : null,
+    days === 0 && hours === 0 ? `${minutes}m` : null,
+  ].filter(Boolean) as string[];
+  const text = parts.join(" ");
+  return diffMs >= 0 ? `${text} left` : `expired ${text} ago`;
+}
 
 export const metadata = {
   title: "Quotations | HealthOptix",
@@ -66,12 +84,19 @@ export default async function InternalQuotesPage() {
                   <th className="px-3 py-3">Created</th>
                   <th className="px-3 py-3">Signed</th>
                   <th className="px-3 py-3">Expires</th>
+                  <th className="px-3 py-3">TTL</th>
                   <th className="px-3 py-3">Link</th>
                   <th className="px-3 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {rows.map((r) => (
+                {rows.map((r) => {
+                  const linkExpired =
+                    r.status === "expired" ||
+                    (r.signingTokenExpiresAt
+                      ? new Date(r.signingTokenExpiresAt) < new Date()
+                      : false);
+                  return (
                   <tr key={r.id} className="align-top hover:bg-slate-50/50">
                     <td className="px-3 py-3 font-mono text-xs">
                       <Link href={`/internal/quotes/${r.id}`} className="underline">
@@ -89,18 +114,25 @@ export default async function InternalQuotesPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-xs text-[#303030]/85">
-                      {new Date(r.createdAt).toLocaleString("en-SG")}
+                      {formatSingaporeDateTime(r.createdAt)}
                     </td>
                     <td className="px-3 py-3 text-xs text-[#303030]/85">
-                      {r.signedAt ? new Date(r.signedAt).toLocaleString("en-SG") : "—"}
+                      {r.signedAt ? formatSingaporeDateTime(r.signedAt) : "—"}
                     </td>
                     <td className="px-3 py-3 text-xs text-[#303030]/85">
                       {r.signingTokenExpiresAt
-                        ? new Date(r.signingTokenExpiresAt).toLocaleString("en-SG")
+                        ? formatSingaporeDateTime(r.signingTokenExpiresAt)
                         : "—"}
                     </td>
+                    <td className="px-3 py-3 text-xs text-[#303030]/85">
+                      {formatTtl(r.signingTokenExpiresAt)}
+                    </td>
                     <td className="px-3 py-3">
-                      <CopySignLinkButton signingToken={r.signingToken} />
+                      <CopySignLinkButton
+                        signingToken={r.signingToken}
+                        disabled={linkExpired}
+                        disabledReason="Signing link expired. Please resend first."
+                      />
                     </td>
                     <td className="px-3 py-3">
                       <Link
@@ -114,7 +146,8 @@ export default async function InternalQuotesPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
             {rows.length === 0 ? (
