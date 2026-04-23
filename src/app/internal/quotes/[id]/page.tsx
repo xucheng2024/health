@@ -207,7 +207,6 @@ export default async function InternalQuoteDetailPage({
               mode="readonly"
               quote={{
                 quoteNo: q.quoteNo,
-                planId: q.planId,
                 status: q.status,
                 companyName: q.companyName,
                 contactName: q.contactName,
