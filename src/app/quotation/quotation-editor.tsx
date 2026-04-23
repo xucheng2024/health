@@ -258,6 +258,7 @@ export function QuotationEditor() {
           body: JSON.stringify({
             planId: createPreview.packageId,
             packageName: createPreview.packageName,
+            validUntil,
             companyName: companyName.trim(),
             contactName: contactName.trim(),
             contactEmail: contactEmail.trim(),
@@ -302,6 +303,7 @@ export function QuotationEditor() {
       contactName,
       contactPhone,
       createPreview,
+      validUntil,
     ],
   );
 
