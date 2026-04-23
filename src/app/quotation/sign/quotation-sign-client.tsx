@@ -121,6 +121,10 @@ export function QuotationSignClient({ token }: { token: string }) {
     hasAutoPrintedRef.current = true;
     const timer = window.setTimeout(() => {
       window.print();
+      // Prevent repeated auto-print behavior on future interactions.
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("autoprint");
+      window.history.replaceState({}, "", cleanUrl.toString());
     }, 300);
     return () => window.clearTimeout(timer);
   }, [loading, payload]);
@@ -140,27 +144,21 @@ export function QuotationSignClient({ token }: { token: string }) {
     if (typeof window === "undefined") return;
 
     const ua = window.navigator.userAgent.toLowerCase();
-    const isMobile =
-      /iphone|ipad|ipod|android|mobile/.test(ua);
+    const isMobile = /iphone|ipad|ipod|android|mobile/.test(ua);
     const isInAppBrowser =
       /micromessenger|qq\/|qqbrowser|mqqbrowser|weibo|line\//.test(ua);
 
-    // Mobile/in-app browsers often block print dialogs in the current tab.
-    // Open a fresh tab with autoprint to improve compatibility.
+    // Always try direct print first in current tab (best UX, avoids reload).
+    window.print();
+
+    // For mobile/in-app browsers, also offer a print-mode tab for cases where
+    // the current-tab print dialog is blocked/suppressed.
     if (isMobile || isInAppBrowser) {
       const url = new URL(window.location.href);
       url.searchParams.set("autoprint", "1");
       const popup = window.open(url.toString(), "_blank", "noopener,noreferrer");
-      if (!popup) {
-        // Popup blocked: fall back to opening the print mode in current page.
-        window.location.assign(url.toString());
-        return;
-      }
-      popup.focus();
-      return;
+      if (popup) popup.focus();
     }
-
-    window.print();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
