@@ -28,7 +28,7 @@ function parseValidUntilToIso(validUntil?: string): string | null {
   const trimmed = validUntil?.trim();
   if (!trimmed) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
-  // Treat date input as end-of-day Singapore time for signing-link expiry.
+  // Treat date input as end-of-day Singapore time for contract validity.
   const iso = new Date(`${trimmed}T23:59:59+08:00`).toISOString();
   return Number.isNaN(Date.parse(iso)) ? null : iso;
 }
@@ -65,8 +65,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const signingTokenExpiresAt = parseValidUntilToIso(body.validUntil);
-  if (body.validUntil && !signingTokenExpiresAt) {
+  const quoteValidUntil = parseValidUntilToIso(body.validUntil);
+  if (body.validUntil && !quoteValidUntil) {
     return NextResponse.json(
       { error: "Invalid validUntil date. Use YYYY-MM-DD." },
       { status: 400 },
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     subtotal: price.subtotal,
     taxAmount: price.taxAmount,
     total: price.total,
-    signingTokenExpiresAt,
+    quoteValidUntil,
     lineItems: normalizedLineItems.map((row, index) => ({
       title: row.title,
       qty: row.qty,

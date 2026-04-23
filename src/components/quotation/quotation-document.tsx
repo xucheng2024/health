@@ -54,7 +54,7 @@ export type QuotationReadonlyQuote = {
   taxAmount: number;
   total: number;
   createdAt: string;
-  signingTokenExpiresAt?: string | null;
+  quoteValidUntil?: string | null;
 };
 
 export type QuotationReadonlyProps = {
@@ -123,8 +123,8 @@ export function QuotationReadonlyDocument({
               <ReadonlyField
                 label="Valid Until / 有效期至"
                 value={
-                  quote.signingTokenExpiresAt
-                    ? new Date(quote.signingTokenExpiresAt).toLocaleDateString("en-SG", {
+                  quote.quoteValidUntil
+                    ? new Date(quote.quoteValidUntil).toLocaleDateString("en-SG", {
                         timeZone: "Asia/Singapore",
                       })
                     : "—"

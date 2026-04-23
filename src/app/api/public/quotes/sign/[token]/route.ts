@@ -87,6 +87,7 @@ async function publicQuotePayload(
       taxAmount: quote.taxAmount,
       total: quote.total,
       createdAt: quote.createdAt,
+      quoteValidUntil: quote.quoteValidUntil,
       signingTokenExpiresAt: quote.signingTokenExpiresAt,
     },
     plan: effectivePlan,

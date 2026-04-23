@@ -29,6 +29,7 @@ type QuoteRow = {
   total: string | number;
   agreed_to_terms: boolean;
   signing_token: string;
+  quote_valid_until: string | null;
   signing_token_expires_at: string | null;
   sent_at: string | null;
   viewed_at: string | null;
@@ -93,6 +94,7 @@ function mapQuoteRow(row: QuoteRow): Quote {
     agreedToTerms: row.agreed_to_terms,
     signedAt: row.signed_at,
     signingToken: row.signing_token,
+    quoteValidUntil: row.quote_valid_until,
     signingTokenExpiresAt: row.signing_token_expires_at,
     sentAt: row.sent_at,
     viewedAt: row.viewed_at,
@@ -184,17 +186,21 @@ export async function createQuoteRecord(
     | "createdAt"
     | "updatedAt"
     | "signingToken"
+    | "quoteValidUntil"
     | "signingTokenExpiresAt"
     | "sentAt"
     | "viewedAt"
     | "signedAt"
     | "agreedToTerms"
-  > & { signingTokenExpiresAt?: string | null; lineItems?: QuoteLineItem[] },
+  > & { quoteValidUntil?: string | null; lineItems?: QuoteLineItem[] },
 ): Promise<QuoteRecord> {
   const supabase = getSupabaseServiceRole();
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const signingToken = randomBytes(32).toString("base64url");
+  const signingTokenExpiresAt = new Date(
+    Date.now() + 7 * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const datePart = now.slice(0, 10).replace(/-/g, "");
   const quoteNo = `Q-${datePart}-${randomBytes(3).toString("hex").toUpperCase()}`;
 
@@ -218,7 +224,8 @@ export async function createQuoteRecord(
     total: quote.total,
     agreed_to_terms: false,
     signing_token: signingToken,
-    signing_token_expires_at: quote.signingTokenExpiresAt ?? null,
+    quote_valid_until: quote.quoteValidUntil ?? null,
+    signing_token_expires_at: signingTokenExpiresAt,
     sent_at: null,
     viewed_at: null,
     signed_at: null,
@@ -438,6 +445,7 @@ export type AdminQuoteListItem = {
   total: number;
   currency: string;
   status: QuoteStatus;
+  quoteValidUntil: string | null;
   signingTokenExpiresAt: string | null;
   sentAt: string | null;
   createdAt: string;
@@ -465,7 +473,7 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
   const { data, error } = await supabase
     .from("quotes")
     .select(
-      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, signing_token_expires_at, sent_at, created_at, signed_at, signing_token",
+      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, quote_valid_until, signing_token_expires_at, sent_at, created_at, signed_at, signing_token",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -487,6 +495,7 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
       r.status as QuoteStatus,
       (r.signing_token_expires_at as string | null) ?? null,
     ),
+    quoteValidUntil: (r.quote_valid_until as string | null) ?? null,
     signingTokenExpiresAt: (r.signing_token_expires_at as string | null) ?? null,
     sentAt: (r.sent_at as string | null) ?? null,
     createdAt: r.created_at as string,

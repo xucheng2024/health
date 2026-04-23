@@ -27,6 +27,7 @@ create table if not exists public.quotes (
   total numeric not null,
   agreed_to_terms boolean not null default false,
   signing_token text not null unique,
+  quote_valid_until timestamptz null,
   signing_token_expires_at timestamptz null,
   sent_at timestamptz null,
   viewed_at timestamptz null,
@@ -37,6 +38,7 @@ create table if not exists public.quotes (
 
 create index if not exists quotes_signing_token_idx on public.quotes (signing_token);
 create index if not exists quotes_status_idx on public.quotes (status);
+alter table public.quotes add column if not exists quote_valid_until timestamptz null;
 
 -- ---------------------------------------------------------------------------
 -- quote_signatures

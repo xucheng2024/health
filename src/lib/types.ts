@@ -40,6 +40,7 @@ export type Quote = {
   agreedToTerms: boolean;
   signedAt: string | null;
   signingToken: string;
+  quoteValidUntil: string | null;
   signingTokenExpiresAt: string | null;
   sentAt: string | null;
   viewedAt: string | null;

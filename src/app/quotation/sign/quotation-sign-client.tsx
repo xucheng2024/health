@@ -28,6 +28,7 @@ type SignApiQuote = {
   taxAmount: number;
   total: number;
   createdAt: string;
+  quoteValidUntil: string | null;
   signingTokenExpiresAt: string | null;
 };
 

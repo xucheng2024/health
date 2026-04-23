@@ -113,6 +113,12 @@ export default async function InternalQuoteDetailPage({
                 <dd>{q.signedAt ? formatSingaporeDateTime(q.signedAt) : "—"}</dd>
               </div>
               <div className="flex justify-between gap-4">
+                <dt className="text-[#303030]/70">Contract valid until</dt>
+                <dd>
+                  {q.quoteValidUntil ? formatSingaporeDateTime(q.quoteValidUntil) : "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
                 <dt className="text-[#303030]/70">Link expiry</dt>
                 <dd>
                   {q.signingTokenExpiresAt
@@ -215,7 +221,7 @@ export default async function InternalQuoteDetailPage({
                 taxAmount: q.taxAmount,
                 total: q.total,
                 createdAt: q.createdAt,
-                signingTokenExpiresAt: q.signingTokenExpiresAt,
+                quoteValidUntil: q.quoteValidUntil,
               }}
               plan={effectivePlan}
               statusLabel={statusLabel}
