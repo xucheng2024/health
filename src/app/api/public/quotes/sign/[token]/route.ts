@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  applyViewedState,
   expireQuoteIfTokenElapsed,
   getQuoteRecordBySigningToken,
   getQuoteSnapshotByQuoteId,
@@ -138,7 +139,7 @@ export async function GET(
   }
 
   await markQuoteViewed(decoded);
-  record = (await getQuoteRecordBySigningToken(decoded)) ?? record;
+  record = applyViewedState(record);
 
   return NextResponse.json(await publicQuotePayload(record));
 }
@@ -269,11 +270,9 @@ export async function POST(
     );
   }
 
-  try {
-    await sendQuoteSignedEmails(result.record);
-  } catch (error) {
+  void sendQuoteSignedEmails(result.record).catch((error) => {
     console.error("sendQuoteSignedEmails failed", error);
-  }
+  });
 
   return NextResponse.json(await publicQuotePayload(result.record));
 }

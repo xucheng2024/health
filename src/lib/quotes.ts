@@ -328,6 +328,22 @@ export async function markQuoteViewed(token: string): Promise<void> {
   await supabase.from("quotes").update(patch).eq("id", row.id);
 }
 
+export function applyViewedState(record: QuoteRecord): QuoteRecord {
+  if (record.quote.viewedAt) return record;
+  const now = new Date().toISOString();
+  const nextStatus = record.quote.status === "draft" ? "sent" : record.quote.status;
+  return toRecord(
+    {
+      ...record.quote,
+      viewedAt: now,
+      sentAt: record.quote.status === "draft" ? now : record.quote.sentAt,
+      status: nextStatus,
+    },
+    record.signature,
+    record.lineItems,
+  );
+}
+
 export async function expireQuoteIfTokenElapsed(
   record: QuoteRecord,
 ): Promise<QuoteRecord> {
