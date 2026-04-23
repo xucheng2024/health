@@ -72,7 +72,7 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
     <p><a href="${escapeHtml(viewUrl)}">View signed quotation</a></p>
     <p>${escapeHtml(expiryText)}</p>
     <p>Please download and save your PDF copy from the signed quotation page.</p>
-    <p>If the link expires, please reply to this email and we will resend a new link.</p>
+    <p>If the link expires, please contact <a href="mailto:info@health-optix.com">info@health-optix.com</a> and we will resend a new link.</p>
   `;
 
   const internalHtml = `
@@ -131,7 +131,7 @@ export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<vo
     <p><a href="${escapeHtml(viewUrl)}">Open secure signing link</a></p>
     <p>${escapeHtml(expiryText)}</p>
     <p>After signing, please download and save your PDF copy from the signed quotation page.</p>
-    <p>If the link expires, please reply to this email and we will resend a new link.</p>
+    <p>If the link expires, please contact <a href="mailto:info@health-optix.com">info@health-optix.com</a> and we will resend a new link.</p>
   `;
 
   await sendViaResend({
