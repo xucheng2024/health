@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QuotationDocument } from "@/components/quotation/quotation-document";
 import { QuotationSignaturePad } from "@/components/quotation/quotation-signature-pad";
 import { formatSingaporeDateTime } from "@/lib/datetime";
@@ -78,7 +78,6 @@ export function QuotationSignClient({ token }: { token: string }) {
   const [signature, setSignature] = useState<string | null>(null);
   const [signatureBlank, setSignatureBlank] = useState(true);
   const [justSigned, setJustSigned] = useState(false);
-  const hasAutoPrintedRef = useRef(false);
 
   const onSignatureChange = useCallback((dataUrl: string | null, blank: boolean) => {
     setSignature(dataUrl);
@@ -110,25 +109,6 @@ export function QuotationSignClient({ token }: { token: string }) {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (hasAutoPrintedRef.current) return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("autoprint") !== "1") return;
-    // Wait until quotation payload is ready, otherwise mobile print captures
-    // only the loading state and produces a tiny/blank preview.
-    if (loading || !payload) return;
-    hasAutoPrintedRef.current = true;
-    const timer = window.setTimeout(() => {
-      window.print();
-      // Prevent repeated auto-print behavior on future interactions.
-      const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete("autoprint");
-      window.history.replaceState({}, "", cleanUrl.toString());
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [loading, payload]);
-
   const readonlyProps = useMemo(() => {
     if (!payload) return null;
     return {
@@ -139,27 +119,6 @@ export function QuotationSignClient({ token }: { token: string }) {
       legalTermsText: payload.snapshot?.legalTermsText,
     };
   }, [payload]);
-
-  const handleSavePdf = useCallback(() => {
-    if (typeof window === "undefined") return;
-
-    const ua = window.navigator.userAgent.toLowerCase();
-    const isMobile = /iphone|ipad|ipod|android|mobile/.test(ua);
-    const isInAppBrowser =
-      /micromessenger|qq\/|qqbrowser|mqqbrowser|weibo|line\//.test(ua);
-
-    // Always try direct print first in current tab (best UX, avoids reload).
-    window.print();
-
-    // For mobile/in-app browsers, also offer a print-mode tab for cases where
-    // the current-tab print dialog is blocked/suppressed.
-    if (isMobile || isInAppBrowser) {
-      const url = new URL(window.location.href);
-      url.searchParams.set("autoprint", "1");
-      const popup = window.open(url.toString(), "_blank", "noopener,noreferrer");
-      if (popup) popup.focus();
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,19 +232,9 @@ export function QuotationSignClient({ token }: { token: string }) {
                 className="mt-2 max-h-40 w-auto object-contain"
               />
             </div>
-            <div className="mt-5 flex flex-wrap gap-2 print:hidden">
-              <button
-                type="button"
-                onClick={handleSavePdf}
-                className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#003F73] px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-[#003F73]/20 transition-opacity hover:opacity-[0.95]"
-              >
-                Print / Save as PDF
-              </button>
+            <div className="mt-5 print:hidden">
               <p className="w-full text-xs text-[#303030]/70">
-                For best results, open this page in a browser (Chrome/Safari) and use the print dialog to save as PDF.
-                / 建议在浏览器（Chrome/Safari）中打开此页面，再通过打印面板保存为 PDF。
-                Some mobile/in-app browsers will open a new page to start printing.
-                / 某些手机或应用内浏览器会先打开新页面再触发打印。
+                To export a PDF, use your browser Share menu and choose Save as PDF (or Print).
               </p>
             </div>
           </section>
