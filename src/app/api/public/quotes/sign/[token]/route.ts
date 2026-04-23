@@ -129,7 +129,7 @@ export async function GET(
     !!record.quote.signingTokenExpiresAt &&
     new Date(record.quote.signingTokenExpiresAt) < new Date();
 
-  if (tokenPast && record.quote.status !== "signed") {
+  if (tokenPast) {
     return NextResponse.json(
       { error: "TOKEN_EXPIRED", message: "This signing link has expired." },
       { status: 410 },

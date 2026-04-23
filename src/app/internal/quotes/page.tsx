@@ -1,6 +1,8 @@
-import { hasInternalAccess, isInternalAuthConfigured } from "@/lib/internal-auth";
+import Link from "next/link";
+import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/internal-auth";
 import { listQuotesForAdmin } from "@/lib/quotes";
 import { CopySignLinkButton } from "./copy-sign-link-button";
+import { ResendButton } from "./resend-button";
 
 export const metadata = {
   title: "Quotations | HealthOptix",
@@ -8,12 +10,17 @@ export const metadata = {
 };
 
 export default async function InternalQuotesPage() {
-  if (!isInternalAuthConfigured() || !(await hasInternalAccess())) {
+  if (!isInternalAuthConfigured() || !(await hasInternalAccessOrCookie())) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100/90 px-4 py-10 text-[#303030] sm:px-8">
         <div className="mx-auto max-w-lg">
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
             Unauthorized. Valid internal credentials are required.
+          </p>
+          <p className="mt-4 text-center">
+            <Link className="text-sm text-[#003F73] underline" href="/internal/login">
+              Go to internal login
+            </Link>
           </p>
         </div>
       </div>
@@ -58,13 +65,19 @@ export default async function InternalQuotesPage() {
                   <th className="px-3 py-3">Status</th>
                   <th className="px-3 py-3">Created</th>
                   <th className="px-3 py-3">Signed</th>
+                  <th className="px-3 py-3">Expires</th>
                   <th className="px-3 py-3">Link</th>
+                  <th className="px-3 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {rows.map((r) => (
                   <tr key={r.id} className="align-top hover:bg-slate-50/50">
-                    <td className="px-3 py-3 font-mono text-xs">{r.quoteNo}</td>
+                    <td className="px-3 py-3 font-mono text-xs">
+                      <Link href={`/internal/quotes/${r.id}`} className="underline">
+                        {r.quoteNo}
+                      </Link>
+                    </td>
                     <td className="px-3 py-3">{r.companyName}</td>
                     <td className="max-w-[14rem] truncate px-3 py-3 text-xs">{r.contactEmail}</td>
                     <td className="px-3 py-3 tabular-nums">
@@ -81,8 +94,24 @@ export default async function InternalQuotesPage() {
                     <td className="px-3 py-3 text-xs text-[#303030]/85">
                       {r.signedAt ? new Date(r.signedAt).toLocaleString("en-SG") : "—"}
                     </td>
+                    <td className="px-3 py-3 text-xs text-[#303030]/85">
+                      {r.signingTokenExpiresAt
+                        ? new Date(r.signingTokenExpiresAt).toLocaleString("en-SG")
+                        : "—"}
+                    </td>
                     <td className="px-3 py-3">
                       <CopySignLinkButton signingToken={r.signingToken} />
+                    </td>
+                    <td className="px-3 py-3">
+                      <Link
+                        href={`/internal/quotes/${r.id}`}
+                        className="rounded-md border border-[#003F73]/25 bg-white px-2.5 py-1 text-xs font-semibold text-[#003F73] hover:bg-slate-50"
+                      >
+                        View
+                      </Link>
+                      <div className="mt-2">
+                        <ResendButton quoteId={r.id} />
+                      </div>
                     </td>
                   </tr>
                 ))}

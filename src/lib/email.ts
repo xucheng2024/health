@@ -47,10 +47,14 @@ async function sendViaResend(payload: EmailPayload): Promise<void> {
 export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> {
   const plan = getPlanById(record.quote.planId);
   const signedAt = record.quote.signedAt ?? record.quote.updatedAt;
+  const expiresAt = record.quote.signingTokenExpiresAt;
   const total = `${record.quote.currency} ${record.quote.total.toFixed(2)}`;
   const signerName =
     record.signature?.signerName ?? record.quote.contactName;
   const viewUrl = signingPageUrl(record.quote.signingToken);
+  const expiryText = expiresAt
+    ? `This secure link is valid until ${new Date(expiresAt).toLocaleString("en-SG")} (Singapore time).`
+    : "This secure link has a limited validity period.";
 
   const customerHtml = `
     <h2>Your quotation has been signed</h2>
@@ -64,7 +68,9 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
       <li>Signed At: ${escapeHtml(signedAt)}</li>
     </ul>
     <p><a href="${escapeHtml(viewUrl)}">View signed quotation</a></p>
-    <p>Download the signed PDF directly on the signed quotation page.</p>
+    <p>${escapeHtml(expiryText)}</p>
+    <p>Please download and save your PDF copy from the signed quotation page.</p>
+    <p>If the link expires, please reply to this email and we will resend a new link.</p>
   `;
 
   const internalHtml = `
@@ -100,4 +106,35 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
   } else {
     console.log("[email:fallback] missing INTERNAL_SALES_EMAIL");
   }
+}
+
+export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<void> {
+  const plan = getPlanById(record.quote.planId);
+  const expiresAt = record.quote.signingTokenExpiresAt;
+  const total = `${record.quote.currency} ${record.quote.total.toFixed(2)}`;
+  const viewUrl = signingPageUrl(record.quote.signingToken);
+  const expiryText = expiresAt
+    ? `This secure link is valid until ${new Date(expiresAt).toLocaleString("en-SG")} (Singapore time).`
+    : "This secure link has a limited validity period.";
+
+  const customerHtml = `
+    <h2>Your quotation is ready for signature</h2>
+    <p>Dear ${escapeHtml(record.quote.contactName)},</p>
+    <p>Please review and sign your quotation using the secure link below.</p>
+    <ul>
+      <li>Quotation No: ${escapeHtml(record.quote.quoteNo)}</li>
+      <li>Plan: ${escapeHtml(plan?.name ?? record.quote.planId)}</li>
+      <li>Total: ${escapeHtml(total)}</li>
+    </ul>
+    <p><a href="${escapeHtml(viewUrl)}">Open secure signing link</a></p>
+    <p>${escapeHtml(expiryText)}</p>
+    <p>After signing, please download and save your PDF copy from the signed quotation page.</p>
+    <p>If the link expires, please reply to this email and we will resend a new link.</p>
+  `;
+
+  await sendViaResend({
+    to: record.quote.contactEmail,
+    subject: "Your quotation signing link",
+    html: customerHtml,
+  });
 }

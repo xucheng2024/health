@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hasInternalAccess, isInternalAuthConfigured } from "@/lib/internal-auth";
+import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/internal-auth";
 import { getQuoteRecord } from "@/lib/quotes";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  if (!isInternalAuthConfigured() || !(await hasInternalAccess())) {
+  if (!isInternalAuthConfigured() || !(await hasInternalAccessOrCookie())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

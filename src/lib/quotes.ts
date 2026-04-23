@@ -432,22 +432,40 @@ export async function signQuoteRecord(params: {
 export type AdminQuoteListItem = {
   id: string;
   quoteNo: string;
+  contactName: string;
   companyName: string;
   contactEmail: string;
   total: number;
   currency: string;
   status: QuoteStatus;
+  signingTokenExpiresAt: string | null;
+  sentAt: string | null;
   createdAt: string;
   signedAt: string | null;
   signingToken: string;
 };
+
+function effectiveStatusForDisplay(
+  status: QuoteStatus,
+  signingTokenExpiresAt: string | null,
+): QuoteStatus {
+  if (
+    status !== "signed" &&
+    status !== "cancelled" &&
+    signingTokenExpiresAt &&
+    new Date(signingTokenExpiresAt) < new Date()
+  ) {
+    return "expired";
+  }
+  return status;
+}
 
 export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
   const supabase = getSupabaseServiceRole();
   const { data, error } = await supabase
     .from("quotes")
     .select(
-      "id, quote_no, company_name, contact_email, total, currency, status, created_at, signed_at, signing_token",
+      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, signing_token_expires_at, sent_at, created_at, signed_at, signing_token",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -460,13 +478,64 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
   return (data as Record<string, unknown>[]).map((r) => ({
     id: r.id as string,
     quoteNo: r.quote_no as string,
+    contactName: r.contact_name as string,
     companyName: r.company_name as string,
     contactEmail: r.contact_email as string,
     total: num(r.total as string | number),
     currency: r.currency as string,
-    status: r.status as QuoteStatus,
+    status: effectiveStatusForDisplay(
+      r.status as QuoteStatus,
+      (r.signing_token_expires_at as string | null) ?? null,
+    ),
+    signingTokenExpiresAt: (r.signing_token_expires_at as string | null) ?? null,
+    sentAt: (r.sent_at as string | null) ?? null,
     createdAt: r.created_at as string,
     signedAt: (r.signed_at as string | null) ?? null,
     signingToken: r.signing_token as string,
   }));
+}
+
+export async function getQuoteRecordForAdmin(id: string): Promise<QuoteRecord | null> {
+  const record = await getQuoteRecord(id);
+  if (!record) return null;
+  return expireQuoteIfTokenElapsed(record);
+}
+
+export type RotateSigningTokenResult =
+  | { ok: true; record: QuoteRecord }
+  | { ok: false; code: "NOT_FOUND" | "ALREADY_SIGNED" | "CANCELLED" | "UPDATE_FAILED" };
+
+export async function rotateQuoteSigningToken(params: {
+  quoteId: string;
+  expiresAtIso: string;
+}): Promise<RotateSigningTokenResult> {
+  const current = await getQuoteRecord(params.quoteId);
+  if (!current) return { ok: false, code: "NOT_FOUND" };
+  if (current.quote.status === "signed") return { ok: false, code: "ALREADY_SIGNED" };
+  if (current.quote.status === "cancelled") return { ok: false, code: "CANCELLED" };
+
+  const supabase = getSupabaseServiceRole();
+  const now = new Date().toISOString();
+  const newToken = randomBytes(32).toString("base64url");
+  const { error } = await supabase
+    .from("quotes")
+    .update({
+      signing_token: newToken,
+      signing_token_expires_at: params.expiresAtIso,
+      status: "sent",
+      sent_at: now,
+      updated_at: now,
+    })
+    .eq("id", params.quoteId)
+    .neq("status", "signed")
+    .neq("status", "cancelled");
+
+  if (error) {
+    console.error("rotateQuoteSigningToken", error);
+    return { ok: false, code: "UPDATE_FAILED" };
+  }
+
+  const next = await getQuoteRecord(params.quoteId);
+  if (!next) return { ok: false, code: "NOT_FOUND" };
+  return { ok: true, record: next };
 }

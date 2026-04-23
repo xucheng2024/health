@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { SectionTitle } from "@/components/quotation/quotation-doc-primitives";
 import { QuotationStandardClauses } from "@/components/quotation/quotation-standard-clauses";
 
@@ -345,6 +346,14 @@ export function QuotationEditor() {
       className="quotation-doc min-h-[100dvh] min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100/90 pb-[max(4rem,calc(env(safe-area-inset-bottom)+3rem))] pt-[max(1.25rem,env(safe-area-inset-top))] text-[#303030] sm:pb-20 sm:pt-10 print:bg-white print:pb-0 print:pt-0"
     >
       <div className="mx-auto max-w-[52rem] px-3 sm:px-6 print:max-w-none print:px-0">
+        <div className="mb-3 flex justify-end print:hidden">
+          <Link
+            href="/internal/login"
+            className="rounded-md border border-[#003F73]/25 bg-white px-3 py-1.5 text-xs font-semibold text-[#003F73] hover:bg-slate-50"
+          >
+            Internal Login
+          </Link>
+        </div>
         <form onSubmit={handleCreateQuote}>
         <article className="quotation-doc__sheet rounded-2xl border border-slate-200/90 bg-white px-4 py-8 shadow-[0_4px_44px_-12px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/[0.035] sm:px-10 sm:py-12 print:rounded-none print:border-0 print:px-0 print:py-0 print:shadow-none print:ring-0">
           <header className="border-b border-slate-200/90 pb-8 text-center print:border-slate-300 print:pb-6">
