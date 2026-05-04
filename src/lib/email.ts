@@ -142,10 +142,10 @@ export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<vo
   const planLabel = escapeHtml(plan?.name ?? record.quote.planId);
 
   const customerHtml = `
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0;padding:0;background-color:#eef2f6">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0;padding:0;background-color:#ffffff">
   <tr>
-    <td align="center" style="padding:28px 14px 36px">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;border-collapse:separate;border-spacing:0;background-color:#ffffff;border:1px solid #dbe4ee;border-radius:14px;overflow:hidden">
+    <td align="center" style="padding:0 0 16px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;border-collapse:separate;border-spacing:0;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
         <tr>
           <td style="padding:22px 24px;background-color:#003F73">
             <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;line-height:1.2">HealthOptix</p>
@@ -170,16 +170,16 @@ export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<vo
           </td>
         </tr>
         <tr>
-          <td style="padding:16px 24px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border-spacing:0;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">
+          <td style="padding:12px 24px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;border-spacing:0;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
               <tr>
-                <td style="padding:16px 18px">
-                  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#003F73;text-transform:uppercase;letter-spacing:0.08em">Summary</p>
-                  <p style="margin:0;font-size:14px;line-height:1.55;color:#334155">
-                    <strong style="color:#0f172a">${escapeHtml(record.quote.quoteNo)}</strong>
-                    <span style="color:#cbd5e1">&nbsp;·&nbsp;</span>${planLabel}<span style="color:#cbd5e1">&nbsp;·&nbsp;</span><strong style="color:#0f172a">${escapeHtml(total)}</strong>
-                  </p>
-                  <p style="margin:14px 0 0;padding-top:14px;border-top:1px solid #e2e8f0;font-size:13px;line-height:1.55;color:#64748b">${expiryOneLine}</p>
+                <td width="4" bgcolor="#003F73" style="width:4px;min-width:4px;background-color:#003F73;font-size:0;line-height:0;mso-line-height-rule:exactly">&nbsp;</td>
+                <td style="padding:14px 18px 14px 16px;background-color:#ffffff">
+                  <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#003F73;text-transform:uppercase;letter-spacing:0.08em">Summary</p>
+                  <p style="margin:0 0 10px;font-size:15px;line-height:1.45;color:#0f172a;font-weight:700">${escapeHtml(record.quote.quoteNo)}</p>
+                  <p style="margin:0 0 10px;font-size:15px;line-height:1.45;color:#334155">${planLabel}</p>
+                  <p style="margin:0;font-size:15px;line-height:1.45;color:#0f172a;font-weight:700">${escapeHtml(total)}</p>
+                  <p style="margin:14px 0 0;padding-top:14px;border-top:1px solid #e8eef3;font-size:13px;line-height:1.55;color:#64748b">${expiryOneLine}</p>
                 </td>
               </tr>
             </table>
@@ -187,12 +187,12 @@ export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<vo
         </tr>
         <tr>
           <td style="padding:0 24px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-            <p style="margin:0;font-size:12px;line-height:1.55;color:#94a3b8">If the button does not work, open this link in your browser:</p>
+            <p style="margin:0;font-size:12px;line-height:1.55;color:#64748b">If the button does not work, open this link in your browser:</p>
             <p style="margin:6px 0 0;font-size:12px;line-height:1.45;word-break:break-all"><a href="${ctaHref}" target="_blank" rel="noopener noreferrer" style="color:#003F73;text-decoration:underline">${ctaHref}</a></p>
           </td>
         </tr>
         <tr>
-          <td style="padding:16px 24px 20px;background-color:#f1f5f9;border-top:1px solid #e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+          <td style="padding:16px 24px 20px;background-color:#ffffff;border-top:1px solid #e8eef3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
             <p style="margin:0;font-size:12px;line-height:1.6;color:#64748b">
               Sent from a <strong style="color:#475569">no-reply</strong> address; replies are not monitored.
               For questions, changes before signing, or an expired link:
@@ -201,7 +201,7 @@ export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<vo
           </td>
         </tr>
       </table>
-      <p style="margin:14px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.4;color:#94a3b8;text-align:center">HealthOptix Pte. Ltd.</p>
+      <p style="margin:12px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.4;color:#94a3b8;text-align:center">HealthOptix Pte. Ltd.</p>
     </td>
   </tr>
 </table>
