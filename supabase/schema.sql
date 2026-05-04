@@ -13,6 +13,7 @@ create table if not exists public.quotes (
   status text not null default 'draft'
     check (status in ('draft', 'sent', 'signed', 'expired', 'cancelled')),
   company_name text not null,
+  company_uen text not null default '',
   contact_name text not null,
   contact_email text not null,
   contact_phone text default '',
@@ -39,6 +40,7 @@ create table if not exists public.quotes (
 create index if not exists quotes_signing_token_idx on public.quotes (signing_token);
 create index if not exists quotes_status_idx on public.quotes (status);
 alter table public.quotes add column if not exists quote_valid_until timestamptz null;
+alter table public.quotes add column if not exists company_uen text not null default '';
 
 -- ---------------------------------------------------------------------------
 -- quote_signatures

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { normalizeCustomerUenForSave } from "@/lib/customer-uen";
 import { getSupabaseServiceRole } from "@/lib/supabase/server";
 import type {
   Quote,
@@ -15,6 +16,7 @@ type QuoteRow = {
   plan_id: string;
   status: QuoteStatus;
   company_name: string;
+  company_uen: string | null;
   contact_name: string;
   contact_email: string;
   contact_phone: string | null;
@@ -79,6 +81,7 @@ function mapQuoteRow(row: QuoteRow): Quote {
     planId: row.plan_id,
     status: row.status,
     companyName: row.company_name,
+    companyUen: normalizeCustomerUenForSave(row.company_uen),
     contactName: row.contact_name,
     contactEmail: row.contact_email,
     contactPhone: row.contact_phone ?? "",
@@ -210,6 +213,7 @@ export async function createQuoteRecord(
     plan_id: quote.planId,
     status: quote.status,
     company_name: quote.companyName,
+    company_uen: normalizeCustomerUenForSave(quote.companyUen),
     contact_name: quote.contactName,
     contact_email: quote.contactEmail,
     contact_phone: quote.contactPhone,

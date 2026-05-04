@@ -1,3 +1,4 @@
+import { HEALTHOPTIX_UEN } from "@/lib/healthoptix-vendor";
 import { SectionTitle, postWarrantyRateBlock } from "./quotation-doc-primitives";
 
 export function QuotationStandardClauses() {
@@ -23,7 +24,7 @@ export function QuotationStandardClauses() {
             595663725001
           </p>
           <p>
-            <span className="text-[#303030]/65">UEN:</span> 202333694H
+            <span className="text-[#303030]/65">UEN:</span> {HEALTHOPTIX_UEN}
           </p>
         </div>
       </div>

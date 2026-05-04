@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { normalizeCustomerUenForSave } from "@/lib/customer-uen";
 import type { Plan, Quote, QuoteLineItem } from "@/lib/types";
 import {
   QUOTATION_LEGAL_TERMS_BUNDLE_ID,
@@ -18,6 +19,7 @@ export type QuoteSigningSnapshot = {
   legalTermsText: string;
   customer: {
     companyName: string;
+    companyUen?: string;
     contactName: string;
     contactEmail: string;
     contactPhone: string;
@@ -83,6 +85,7 @@ export function buildSigningSnapshot(params: {
     legalTermsText: QUOTATION_LEGAL_TERMS_FOR_SNAPSHOT,
     customer: {
       companyName: params.quote.companyName,
+      companyUen: normalizeCustomerUenForSave(params.quote.companyUen),
       contactName: params.quote.contactName,
       contactEmail: params.quote.contactEmail,
       contactPhone: params.quote.contactPhone,

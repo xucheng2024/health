@@ -25,6 +25,7 @@ export type Quote = {
   planId: string;
   status: QuoteStatus;
   companyName: string;
+  companyUen: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;

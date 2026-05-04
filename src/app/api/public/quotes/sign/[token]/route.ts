@@ -76,6 +76,7 @@ async function publicQuotePayload(
       planId: quote.planId,
       status: quote.status,
       companyName: quote.companyName,
+      companyUen: quote.companyUen,
       contactName: quote.contactName,
       contactEmail: quote.contactEmail,
       contactPhone: quote.contactPhone,

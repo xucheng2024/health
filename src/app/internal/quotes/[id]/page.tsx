@@ -209,6 +209,7 @@ export default async function InternalQuoteDetailPage({
                 quoteNo: q.quoteNo,
                 status: q.status,
                 companyName: q.companyName,
+                companyUen: q.companyUen,
                 contactName: q.contactName,
                 contactEmail: q.contactEmail,
                 contactPhone: q.contactPhone,

@@ -17,6 +17,7 @@ type SignApiQuote = {
   planId: string;
   status: string;
   companyName: string;
+  companyUen: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;

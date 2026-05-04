@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { SectionTitle } from "@/components/quotation/quotation-doc-primitives";
+import { CUSTOMER_UEN_IF_EMPTY } from "@/lib/customer-uen";
+import { HEALTHOPTIX_UEN } from "@/lib/healthoptix-vendor";
 import { QuotationStandardClauses } from "@/components/quotation/quotation-standard-clauses";
 
 const CORE_OPERATIONS_FEATURE_ROWS: readonly { en: string; zh: string }[] = [
@@ -67,6 +69,17 @@ function addYears(date: Date, years: number): Date {
   return next;
 }
 
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+/** Valid until default: same calendar date one year ahead, plus one day. */
+function defaultValidUntilFromQuoteDate(quoteDate: Date): string {
+  return formatDateInput(addDays(addYears(quoteDate, 1), 1));
+}
+
 const QUOTE_LINE_DEFAULTS: readonly number[] = [5200, 8000, 11000, 21000];
 
 const inputLine =
@@ -111,6 +124,7 @@ type CreatedQuoteResult = {
     id: string;
     quoteNo: string;
     companyName: string;
+    companyUen?: string;
     contactName: string;
     contactEmail: string;
     total: number;
@@ -119,8 +133,21 @@ type CreatedQuoteResult = {
   signingUrl: string;
 };
 
-function CreatedQuoteActions({ signingUrl }: { signingUrl: string }) {
+function CreatedQuoteActions({
+  quoteId,
+  signingUrl,
+  getCreatePassword,
+}: {
+  quoteId: string;
+  signingUrl: string;
+  getCreatePassword: () => string | null;
+}) {
   const [copied, setCopied] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<{
+    kind: "success" | "error" | "warn";
+    message: string;
+  } | null>(null);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -132,23 +159,110 @@ function CreatedQuoteActions({ signingUrl }: { signingUrl: string }) {
     }
   }, [signingUrl]);
 
+  const sendInFlightRef = useRef(false);
+
+  const handleEmailLink = useCallback(async () => {
+    if (sendInFlightRef.current) return;
+    const pwd = getCreatePassword();
+    if (!pwd) {
+      setEmailFeedback({
+        kind: "error",
+        message:
+          "The authorization password is no longer available in this session. Refresh the page, create the quotation again, then send the email—or copy the link and share it manually.",
+      });
+      return;
+    }
+
+    sendInFlightRef.current = true;
+    setSendingEmail(true);
+    setEmailFeedback(null);
+    try {
+      const res = await fetch(
+        `/api/quotes/${encodeURIComponent(quoteId)}/send-signing-link`,
+        {
+          method: "POST",
+          headers: { "x-create-password": pwd },
+        },
+      );
+      const data = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+        emailConfigured?: boolean;
+      };
+      if (!res.ok) {
+        setEmailFeedback({
+          kind: "error",
+          message: data.error ?? "Could not send email. Please try again.",
+        });
+        return;
+      }
+      if (data.emailConfigured === false) {
+        setEmailFeedback({
+          kind: "warn",
+          message:
+            data.message ??
+            "Email is not configured on the server. Copy the link and send it to your customer manually.",
+        });
+        return;
+      }
+      setEmailFeedback({
+        kind: "success",
+        message:
+          data.message ??
+          "Signing link has been sent to the contact email on this quotation.",
+      });
+    } catch {
+      setEmailFeedback({
+        kind: "error",
+        message: "Network error while sending email. Please try again.",
+      });
+    } finally {
+      sendInFlightRef.current = false;
+      setSendingEmail(false);
+    }
+  }, [getCreatePassword, quoteId]);
+
   return (
-    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-      <a
-        href={signingUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#003F73] px-4 py-2.5 text-sm font-semibold tracking-wide text-white shadow-md shadow-[#003F73]/20 transition-opacity hover:opacity-[0.96]"
-      >
-        Open Signing Page
-      </a>
-      <button
-        type="button"
-        onClick={() => void handleCopy()}
-        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#003F73]/20 bg-white px-4 py-2.5 text-sm font-semibold tracking-wide text-[#003F73] shadow-sm transition-colors hover:bg-slate-50"
-      >
-        {copied ? "Copied Link" : "Copy Link"}
-      </button>
+    <div className="mt-4 space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <a
+          href={signingUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#003F73] px-4 py-2.5 text-sm font-semibold tracking-wide text-white shadow-md shadow-[#003F73]/20 transition-opacity hover:opacity-[0.96]"
+        >
+          Open Signing Page
+        </a>
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#003F73]/20 bg-white px-4 py-2.5 text-sm font-semibold tracking-wide text-[#003F73] shadow-sm transition-colors hover:bg-slate-50"
+        >
+          {copied ? "Copied Link" : "Copy Link"}
+        </button>
+        <button
+          type="button"
+          disabled={sendingEmail}
+          onClick={() => void handleEmailLink()}
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#003F73]/20 bg-white px-4 py-2.5 text-sm font-semibold tracking-wide text-[#003F73] shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {sendingEmail ? "Sending…" : "Email Signing Link"}
+        </button>
+      </div>
+      {emailFeedback ? (
+        <p
+          className={`text-sm leading-relaxed ${
+            emailFeedback.kind === "success"
+              ? "text-emerald-900"
+              : emailFeedback.kind === "warn"
+                ? "text-amber-950"
+                : "text-red-900"
+          }`}
+        >
+          {emailFeedback.message}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -158,9 +272,10 @@ export function QuotationEditor() {
   const [billTo, setBillTo] = useState("");
   const [quoteDate, setQuoteDate] = useState(() => formatDateInput(today));
   const [validUntil, setValidUntil] = useState(() =>
-    formatDateInput(addYears(today, 1)),
+    defaultValidUntilFromQuoteDate(today),
   );
   const [companyName, setCompanyName] = useState("");
+  const [companyUen, setCompanyUen] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -171,6 +286,11 @@ export function QuotationEditor() {
   const [confirmingCreatePassword, setConfirmingCreatePassword] = useState(false);
   const [createPasswordError, setCreatePasswordError] = useState<string | null>(null);
   const createPasswordInputRef = useRef<HTMLInputElement | null>(null);
+  const lastCreatePasswordRef = useRef<string | null>(null);
+  const getCreatePasswordForSendLink = useCallback(
+    () => lastCreatePasswordRef.current,
+    [],
+  );
   const [lines, setLines] = useState<QuoteLine[]>(() =>
     QUOTE_LINE_DEFAULTS.map((unitPrice) => ({ qty: 0, unitPrice })),
   );
@@ -247,6 +367,7 @@ export function QuotationEditor() {
       setCreating(true);
       setCreateError(null);
       setCreatedQuote(null);
+      lastCreatePasswordRef.current = null;
 
       try {
         const response = await fetch("/api/quotes", {
@@ -260,6 +381,7 @@ export function QuotationEditor() {
             packageName: createPreview.packageName,
             validUntil,
             companyName: companyName.trim(),
+            companyUen: companyUen.trim() || CUSTOMER_UEN_IF_EMPTY,
             contactName: contactName.trim(),
             contactEmail: contactEmail.trim(),
             contactPhone: contactPhone.trim(),
@@ -287,6 +409,7 @@ export function QuotationEditor() {
         }
 
         const created = data as CreatedQuoteResult;
+        lastCreatePasswordRef.current = createPassword.trim();
         setCreatedQuote(created);
         return { ok: true };
       } catch {
@@ -299,6 +422,7 @@ export function QuotationEditor() {
     },
     [
       companyName,
+      companyUen,
       contactEmail,
       contactName,
       contactPhone,
@@ -379,9 +503,8 @@ export function QuotationEditor() {
             <span className="font-semibold text-[#003F73]">Company:</span>{" "}
             HealthOptix Pte. Ltd.
           </p>
-          <p className="break-words">
-            <span className="font-semibold text-[#003F73]">Address:</span> 35
-            Selegie Road, #03-24 Parklane Shopping Mall, Singapore 188307
+          <p>
+            <span className="font-semibold text-[#003F73]">UEN:</span> {HEALTHOPTIX_UEN}
           </p>
           <p>
             <span className="font-semibold text-[#003F73]">Contact:</span>{" "}
@@ -407,6 +530,17 @@ export function QuotationEditor() {
               autoComplete="off"
               aria-label="Bill To / 客户名称"
               required
+            />
+          </Field>
+          <Field label="UEN / 统一实体编号">
+            <input
+              type="text"
+              value={companyUen}
+              onChange={(e) => setCompanyUen(e.target.value)}
+              className={inputLine}
+              autoComplete="off"
+              inputMode="text"
+              aria-label="UEN unified entity number"
             />
           </Field>
           <Field label="Contact Person / 联系人">
@@ -907,7 +1041,18 @@ export function QuotationEditor() {
               {createdQuote.signingUrl}
             </a>
           </p>
-          <CreatedQuoteActions signingUrl={createdQuote.signingUrl} />
+          <p className="mt-3 text-sm leading-relaxed text-[#303030]/90">
+            Share this link with your customer so they can review and sign online. Use{" "}
+            <span className="font-medium text-[#003F73]">Copy Link</span> to paste it into your own
+            message, or <span className="font-medium text-[#003F73]">Email Signing Link</span> to
+            send the same URL to the contact email shown above. The email includes short
+            instructions and the same validity notice as the signing page.
+          </p>
+          <CreatedQuoteActions
+            quoteId={createdQuote.quote.id}
+            signingUrl={createdQuote.signingUrl}
+            getCreatePassword={getCreatePasswordForSendLink}
+          />
         </div>
       ) : null}
 

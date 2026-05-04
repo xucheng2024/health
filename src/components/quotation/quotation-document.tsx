@@ -1,3 +1,5 @@
+import { formatCustomerUenForDisplay } from "@/lib/customer-uen";
+import { HEALTHOPTIX_UEN } from "@/lib/healthoptix-vendor";
 import { QuotationStandardClauses } from "./quotation-standard-clauses";
 import { SectionTitle } from "./quotation-doc-primitives";
 
@@ -43,6 +45,7 @@ export type QuotationReadonlyQuote = {
   quoteNo: string;
   status: string;
   companyName: string;
+  companyUen: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -98,9 +101,9 @@ export function QuotationReadonlyDocument({
                 <span className="font-semibold text-[#003F73]">Company:</span>{" "}
                 HealthOptix Pte. Ltd.
               </p>
-              <p className="break-words">
-                <span className="font-semibold text-[#003F73]">Address:</span> 35
-                Selegie Road, #03-24 Parklane Shopping Mall, Singapore 188307
+              <p>
+                <span className="font-semibold text-[#003F73]">UEN:</span>{" "}
+                {HEALTHOPTIX_UEN}
               </p>
               <p>
                 <span className="font-semibold text-[#003F73]">Contact:</span>{" "}
@@ -115,6 +118,10 @@ export function QuotationReadonlyDocument({
 
             <div className="mt-6 border-t border-slate-200 pt-4">
               <ReadonlyField label="Bill To / 客户名称" value={quote.companyName} />
+              <ReadonlyField
+                label="UEN / 统一实体编号"
+                value={formatCustomerUenForDisplay(quote.companyUen)}
+              />
               <ReadonlyField label="Quotation No. / 报价编号" value={quote.quoteNo} />
               <ReadonlyField
                 label="Date / 日期"

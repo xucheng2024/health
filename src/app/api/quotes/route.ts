@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeCustomerUenForSave } from "@/lib/customer-uen";
 import { createQuoteRecord } from "@/lib/quotes";
 import { calculatePrice } from "@/lib/pricing";
 import { signingPageUrl } from "@/lib/site-url";
@@ -10,6 +11,7 @@ type CreateQuoteBody = {
   packageName?: string;
   validUntil?: string;
   companyName: string;
+  companyUen?: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -106,6 +108,7 @@ export async function POST(request: Request) {
     planId: body.planId.trim(),
     status: "draft",
     companyName: body.companyName.trim(),
+    companyUen: normalizeCustomerUenForSave(body.companyUen),
     contactName: body.contactName.trim(),
     contactEmail: body.contactEmail.trim(),
     contactPhone: body.contactPhone?.trim() ?? "",
