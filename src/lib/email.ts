@@ -133,49 +133,83 @@ export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<vo
   const expiresAt = record.quote.signingTokenExpiresAt;
   const total = `${record.quote.currency} ${record.quote.total.toFixed(2)}`;
   const viewUrl = signingPageUrl(record.quote.signingToken);
-  const expiryDetailHtml = expiresAt
-    ? `For your security, this link is only valid until <strong>${escapeHtml(formatSingaporeDateTime(expiresAt))}</strong> (Singapore time). After that moment it will stop working and you will need a new link from us.`
-    : `For your security, this link is <strong>time-limited</strong> and will stop working after a short period. If it no longer opens, please request a new link from us.`;
+  const expiryOneLine = expiresAt
+    ? `This link expires <strong>${escapeHtml(formatSingaporeDateTime(expiresAt))}</strong> (Singapore time).`
+    : `This link is <strong>time-limited</strong> for security.`;
 
-  const signingLinkEmailFooter = `
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0 20px" />
-    <p style="font-size:13px;line-height:1.55;color:#475569;margin:0">
-      This message was sent from a <strong>no-reply</strong> address; replies are not monitored.
-      If you have any questions about this quotation, please email
-      <a href="mailto:${escapeHtml(SUPPORT_INFO_EMAIL)}">${escapeHtml(SUPPORT_INFO_EMAIL)}</a>.
-    </p>
-  `;
+  const ctaHref = escapeHtml(viewUrl);
+  const mailInfo = escapeHtml(SUPPORT_INFO_EMAIL);
+  const planLabel = escapeHtml(plan?.name ?? record.quote.planId);
 
   const customerHtml = `
-    <h2>Your quotation is ready for signature</h2>
-    <p>Dear ${escapeHtml(record.quote.contactName)},</p>
-    <p>
-      Please review the full quotation and complete your electronic signature when you are ready.
-      The secure link below opens the official signing page in your browser.
-    </p>
-    <p style="margin:16px 0;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;line-height:1.55;color:#1e293b">
-      <strong>Important — signing link is time-limited</strong><br />
-      ${expiryDetailHtml}
-    </p>
-    <p>
-      You may use any recent desktop or mobile browser. If you need changes to the quotation before signing,
-      contact <a href="mailto:${escapeHtml(SUPPORT_INFO_EMAIL)}">${escapeHtml(SUPPORT_INFO_EMAIL)}</a>.
-    </p>
-    <ul>
-      <li>Quotation No: ${escapeHtml(record.quote.quoteNo)}</li>
-      <li>Plan: ${escapeHtml(plan?.name ?? record.quote.planId)}</li>
-      <li>Total: ${escapeHtml(total)}</li>
-    </ul>
-    <p><a href="${escapeHtml(viewUrl)}">Open secure signing link</a></p>
-    <p>Please complete signing before the expiry time described above.</p>
-    <p>After you sign, please download and keep a PDF copy from the signed quotation page for your records.</p>
-    <p>If the link has already expired, email <a href="mailto:${escapeHtml(SUPPORT_INFO_EMAIL)}">${escapeHtml(SUPPORT_INFO_EMAIL)}</a> and we will send a new link.</p>
-    ${signingLinkEmailFooter}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0;padding:0;background-color:#eef2f6">
+  <tr>
+    <td align="center" style="padding:28px 14px 36px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;border-collapse:separate;border-spacing:0;background-color:#ffffff;border:1px solid #dbe4ee;border-radius:14px;overflow:hidden">
+        <tr>
+          <td style="padding:22px 24px;background-color:#003F73">
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;line-height:1.2">HealthOptix</p>
+            <p style="margin:8px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.45;color:#ffffff;opacity:0.92">Quotation — ready for your signature</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:26px 24px 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+            <p style="margin:0;font-size:16px;line-height:1.45;color:#0f172a;font-weight:600">Dear ${escapeHtml(record.quote.contactName)},</p>
+            <p style="margin:12px 0 0;font-size:15px;line-height:1.55;color:#475569">Your quotation is ready. Use the button below to open the secure signing page.</p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:18px 24px 8px">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto">
+              <tr>
+                <td align="center" bgcolor="#003F73" style="border-radius:10px;background-color:#003F73">
+                  <a href="${ctaHref}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:16px 40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;line-height:1.2">Open signing link</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 24px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border-spacing:0;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px">
+              <tr>
+                <td style="padding:16px 18px">
+                  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#003F73;text-transform:uppercase;letter-spacing:0.08em">Summary</p>
+                  <p style="margin:0;font-size:14px;line-height:1.55;color:#334155">
+                    <strong style="color:#0f172a">${escapeHtml(record.quote.quoteNo)}</strong>
+                    <span style="color:#cbd5e1">&nbsp;·&nbsp;</span>${planLabel}<span style="color:#cbd5e1">&nbsp;·&nbsp;</span><strong style="color:#0f172a">${escapeHtml(total)}</strong>
+                  </p>
+                  <p style="margin:14px 0 0;padding-top:14px;border-top:1px solid #e2e8f0;font-size:13px;line-height:1.55;color:#64748b">${expiryOneLine}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 24px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+            <p style="margin:0;font-size:12px;line-height:1.55;color:#94a3b8">If the button does not work, open this link in your browser:</p>
+            <p style="margin:6px 0 0;font-size:12px;line-height:1.45;word-break:break-all"><a href="${ctaHref}" target="_blank" rel="noopener noreferrer" style="color:#003F73;text-decoration:underline">${ctaHref}</a></p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 24px 20px;background-color:#f1f5f9;border-top:1px solid #e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#64748b">
+              Sent from a <strong style="color:#475569">no-reply</strong> address; replies are not monitored.
+              For questions, changes before signing, or an expired link:
+              <a href="mailto:${mailInfo}" style="color:#003F73;font-weight:600;text-decoration:none">${mailInfo}</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:14px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.4;color:#94a3b8;text-align:center">HealthOptix Pte. Ltd.</p>
+    </td>
+  </tr>
+</table>
   `;
 
   await sendViaResend({
     to: record.quote.contactEmail,
-    subject: "Your quotation signing link",
+    subject: "HealthOptix — Your quotation signing link",
     html: customerHtml,
     from: quotationSigningLinkFrom(),
   });
