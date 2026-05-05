@@ -7,6 +7,7 @@ import type {
   QuoteRecord,
   QuoteStatus,
   Signature,
+  ZohoInvoiceStatus,
 } from "@/lib/types";
 import type { QuoteSigningSnapshot } from "@/lib/quote-snapshots";
 
@@ -35,6 +36,11 @@ type QuoteRow = {
   signing_token_expires_at: string | null;
   sent_at: string | null;
   viewed_at: string | null;
+  zoho_invoice_id: string | null;
+  zoho_invoice_number: string | null;
+  zoho_invoice_url: string | null;
+  zoho_invoice_sent_at: string | null;
+  zoho_invoice_status: string | null;
   signed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -74,6 +80,11 @@ function num(v: string | number): number {
   return typeof v === "number" ? v : Number(v);
 }
 
+function mapZohoInvoiceStatus(value: string | null): ZohoInvoiceStatus {
+  if (value === "sent" || value === "void") return value;
+  return "none";
+}
+
 function mapQuoteRow(row: QuoteRow): Quote {
   return {
     id: row.id,
@@ -101,6 +112,11 @@ function mapQuoteRow(row: QuoteRow): Quote {
     signingTokenExpiresAt: row.signing_token_expires_at,
     sentAt: row.sent_at,
     viewedAt: row.viewed_at,
+    zohoInvoiceId: row.zoho_invoice_id,
+    zohoInvoiceNumber: row.zoho_invoice_number,
+    zohoInvoiceUrl: row.zoho_invoice_url,
+    zohoInvoiceSentAt: row.zoho_invoice_sent_at,
+    zohoInvoiceStatus: mapZohoInvoiceStatus(row.zoho_invoice_status),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -195,6 +211,11 @@ export async function createQuoteRecord(
     | "viewedAt"
     | "signedAt"
     | "agreedToTerms"
+    | "zohoInvoiceId"
+    | "zohoInvoiceNumber"
+    | "zohoInvoiceUrl"
+    | "zohoInvoiceSentAt"
+    | "zohoInvoiceStatus"
   > & { quoteValidUntil?: string | null; lineItems?: QuoteLineItem[] },
 ): Promise<QuoteRecord> {
   const supabase = getSupabaseServiceRole();
@@ -232,6 +253,11 @@ export async function createQuoteRecord(
     signing_token_expires_at: signingTokenExpiresAt,
     sent_at: null,
     viewed_at: null,
+    zoho_invoice_id: null,
+    zoho_invoice_number: null,
+    zoho_invoice_url: null,
+    zoho_invoice_sent_at: null,
+    zoho_invoice_status: null,
     signed_at: null,
     created_at: now,
     updated_at: now,
@@ -471,6 +497,8 @@ export type AdminQuoteListItem = {
   createdAt: string;
   signedAt: string | null;
   signingToken: string;
+  zohoInvoiceStatus: ZohoInvoiceStatus;
+  zohoInvoiceNumber: string | null;
 };
 
 function effectiveStatusForDisplay(
@@ -493,7 +521,7 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
   const { data, error } = await supabase
     .from("quotes")
     .select(
-      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, quote_valid_until, signing_token_expires_at, sent_at, created_at, signed_at, signing_token",
+      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, quote_valid_until, signing_token_expires_at, sent_at, created_at, signed_at, signing_token, zoho_invoice_status, zoho_invoice_number",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -521,6 +549,8 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
     createdAt: r.created_at as string,
     signedAt: (r.signed_at as string | null) ?? null,
     signingToken: r.signing_token as string,
+    zohoInvoiceStatus: mapZohoInvoiceStatus((r.zoho_invoice_status as string | null) ?? null),
+    zohoInvoiceNumber: (r.zoho_invoice_number as string | null) ?? null,
   }));
 }
 

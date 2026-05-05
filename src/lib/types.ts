@@ -19,6 +19,8 @@ export type QuoteStatus =
   | "expired"
   | "cancelled";
 
+export type ZohoInvoiceStatus = "none" | "sent" | "void";
+
 export type Quote = {
   id: string;
   quoteNo: string;
@@ -45,6 +47,11 @@ export type Quote = {
   signingTokenExpiresAt: string | null;
   sentAt: string | null;
   viewedAt: string | null;
+  zohoInvoiceId: string | null;
+  zohoInvoiceNumber: string | null;
+  zohoInvoiceUrl: string | null;
+  zohoInvoiceSentAt: string | null;
+  zohoInvoiceStatus: ZohoInvoiceStatus;
   createdAt: string;
   updatedAt: string;
 };

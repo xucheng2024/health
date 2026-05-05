@@ -43,7 +43,7 @@ export function ResendButton({ quoteId }: { quoteId: string }) {
         type="button"
         onClick={onResend}
         disabled={loading}
-        className="rounded-md border border-[#003F73]/25 bg-white px-3 py-1.5 text-xs font-semibold text-[#003F73] hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-[#003F73]/20 bg-white px-3 py-2 text-xs font-semibold text-[#003F73] shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Resending..." : "Resend"}
       </button>

@@ -1,4 +1,5 @@
 import { getPlanById } from "@/data/plans";
+import { getSupabaseServiceRole } from "@/lib/supabase/server";
 import type { QuoteLineItem, QuoteRecord } from "@/lib/types";
 
 type ZohoConfig = {
@@ -22,6 +23,7 @@ type ZohoInvoice = {
   invoice_id: string | number;
   invoice_number?: string;
   invoice_url?: string;
+  status?: string;
 };
 
 export type SendZohoInvoiceResult = {
@@ -30,6 +32,13 @@ export type SendZohoInvoiceResult = {
   invoiceUrl: string | null;
   sentTo: string;
   cc: string[];
+  reusedExisting: boolean;
+};
+
+export type VoidZohoInvoiceResult = {
+  invoiceId: string;
+  invoiceNumber: string | null;
+  alreadyVoided: boolean;
 };
 
 export function isZohoInvoiceConfigured(): boolean {
@@ -277,6 +286,115 @@ async function createInvoice(
   return invoice;
 }
 
+async function getInvoiceById(
+  config: ZohoConfig,
+  accessToken: string,
+  invoiceId: string,
+): Promise<ZohoInvoice | null> {
+  try {
+    const data = await zohoRequest(config, accessToken, `/invoices/${encodeURIComponent(invoiceId)}`);
+    const invoice = data.invoice as ZohoInvoice | undefined;
+    return invoice?.invoice_id ? invoice : null;
+  } catch {
+    return null;
+  }
+}
+
+async function findInvoiceByReferenceNumber(
+  config: ZohoConfig,
+  accessToken: string,
+  referenceNumber: string,
+): Promise<ZohoInvoice | null> {
+  const params = new URLSearchParams({
+    reference_number: referenceNumber,
+    per_page: "200",
+  });
+  const data = await zohoRequest(config, accessToken, `/invoices?${params.toString()}`);
+  const invoices = Array.isArray(data.invoices) ? data.invoices : [];
+  const match = invoices.find((invoice) => {
+    const candidate = invoice as Record<string, unknown>;
+    return candidate.reference_number === referenceNumber && candidate.invoice_id;
+  }) as ZohoInvoice | undefined;
+  return match?.invoice_id ? match : null;
+}
+
+async function persistInvoiceReference(
+  quoteId: string,
+  invoice: ZohoInvoice,
+): Promise<void> {
+  const status = invoice.status === "void" ? "void" : "sent";
+  const supabase = getSupabaseServiceRole();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("quotes")
+    .update({
+      zoho_invoice_id: String(invoice.invoice_id),
+      zoho_invoice_number: invoice.invoice_number ?? null,
+      zoho_invoice_url: invoice.invoice_url ?? null,
+      zoho_invoice_sent_at: now,
+      zoho_invoice_status: status,
+      updated_at: now,
+    })
+    .eq("id", quoteId);
+
+  if (error) {
+    console.error("persistInvoiceReference", error);
+  }
+}
+
+async function getOrCreateInvoice(
+  config: ZohoConfig,
+  accessToken: string,
+  record: QuoteRecord,
+  contact: ZohoContact,
+): Promise<{ invoice: ZohoInvoice; reusedExisting: boolean }> {
+  if (record.quote.zohoInvoiceId) {
+    const stored = await getInvoiceById(config, accessToken, record.quote.zohoInvoiceId);
+    if (stored) {
+      return { invoice: stored, reusedExisting: true };
+    }
+  }
+
+  const existing = await findInvoiceByReferenceNumber(
+    config,
+    accessToken,
+    record.quote.quoteNo,
+  );
+  if (existing) {
+    await persistInvoiceReference(record.quote.id, existing);
+    return { invoice: existing, reusedExisting: true };
+  }
+
+  const created = await createInvoice(config, accessToken, record, contact);
+  await persistInvoiceReference(record.quote.id, created);
+  return { invoice: created, reusedExisting: false };
+}
+
+async function findExistingInvoiceForQuote(
+  config: ZohoConfig,
+  accessToken: string,
+  record: QuoteRecord,
+): Promise<ZohoInvoice | null> {
+  if (record.quote.zohoInvoiceId) {
+    const stored = await getInvoiceById(config, accessToken, record.quote.zohoInvoiceId);
+    if (stored) {
+      return stored;
+    }
+  }
+
+  const existing = await findInvoiceByReferenceNumber(
+    config,
+    accessToken,
+    record.quote.quoteNo,
+  );
+  if (existing) {
+    await persistInvoiceReference(record.quote.id, existing);
+    return existing;
+  }
+
+  return null;
+}
+
 async function emailInvoice(
   config: ZohoConfig,
   accessToken: string,
@@ -306,8 +424,19 @@ export async function createAndSendZohoInvoice(
   const config = getZohoConfig();
   const accessToken = await getAccessToken(config);
   const contact = await createContact(config, accessToken, record);
-  const invoice = await createInvoice(config, accessToken, record, contact);
+  const { invoice, reusedExisting } = await getOrCreateInvoice(
+    config,
+    accessToken,
+    record,
+    contact,
+  );
+  if (invoice.status === "void") {
+    throw new Error(
+      `Zoho invoice ${invoice.invoice_number ?? invoice.invoice_id} is voided and cannot be sent.`,
+    );
+  }
   const cc = await emailInvoice(config, accessToken, record, invoice);
+  await persistInvoiceReference(record.quote.id, invoice);
 
   return {
     invoiceId: String(invoice.invoice_id),
@@ -315,5 +444,47 @@ export async function createAndSendZohoInvoice(
     invoiceUrl: invoice.invoice_url ?? null,
     sentTo: record.quote.contactEmail,
     cc,
+    reusedExisting,
+  };
+}
+
+export async function voidZohoInvoice(
+  record: QuoteRecord,
+): Promise<VoidZohoInvoiceResult> {
+  const config = getZohoConfig();
+  const accessToken = await getAccessToken(config);
+  const invoice = await findExistingInvoiceForQuote(config, accessToken, record);
+
+  if (!invoice) {
+    throw new Error(`No Zoho invoice found for quotation ${record.quote.quoteNo}.`);
+  }
+
+  if (invoice.status === "void") {
+    return {
+      invoiceId: String(invoice.invoice_id),
+      invoiceNumber: invoice.invoice_number ?? null,
+      alreadyVoided: true,
+    };
+  }
+
+  await zohoRequest(
+    config,
+    accessToken,
+    `/invoices/${encodeURIComponent(String(invoice.invoice_id))}/status/void`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+
+  await persistInvoiceReference(record.quote.id, {
+    ...invoice,
+    status: "void",
+  });
+
+  return {
+    invoiceId: String(invoice.invoice_id),
+    invoiceNumber: invoice.invoice_number ?? null,
+    alreadyVoided: false,
   };
 }

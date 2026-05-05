@@ -3,11 +3,29 @@ import { notFound } from "next/navigation";
 import { CopySignLinkButton } from "@/app/internal/quotes/copy-sign-link-button";
 import { ResendButton } from "@/app/internal/quotes/resend-button";
 import { SendInvoiceButton } from "@/app/internal/quotes/send-invoice-button";
+import { VoidInvoiceButton } from "@/app/internal/quotes/void-invoice-button";
 import { QuotationDocument } from "@/components/quotation/quotation-document";
 import { getPlanById } from "@/data/plans";
 import { formatSingaporeDateTime } from "@/lib/datetime";
 import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/internal-auth";
 import { getQuoteRecordForAdmin, getQuoteSnapshotByQuoteId } from "@/lib/quotes";
+import type { ZohoInvoiceStatus } from "@/lib/types";
+
+function zohoInvoiceStatusLabel(status: ZohoInvoiceStatus): string {
+  if (status === "sent") return "Invoice sent";
+  if (status === "void") return "Invoice voided";
+  return "No invoice";
+}
+
+function zohoInvoiceStatusClass(status: ZohoInvoiceStatus): string {
+  if (status === "sent") {
+    return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200";
+  }
+  if (status === "void") {
+    return "bg-rose-50 text-rose-800 ring-1 ring-rose-200";
+  }
+  return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+}
 
 export const metadata = {
   title: "Quotation Detail | HealthOptix",
@@ -127,23 +145,45 @@ export default async function InternalQuoteDetailPage({
                     : "—"}
                 </dd>
               </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#303030]/70">Zoho invoice</dt>
+                <dd className="text-right">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${zohoInvoiceStatusClass(q.zohoInvoiceStatus)}`}
+                  >
+                    {zohoInvoiceStatusLabel(q.zohoInvoiceStatus)}
+                  </span>
+                  {q.zohoInvoiceNumber ? (
+                    <p className="mt-1 text-xs text-[#303030]/70">{q.zohoInvoiceNumber}</p>
+                  ) : null}
+                </dd>
+              </div>
             </dl>
           </section>
 
           <section className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[#003F73]">Actions</h2>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <CopySignLinkButton
                 signingToken={q.signingToken}
                 disabled={linkExpired}
                 disabledReason="Signing link expired. Please resend first."
               />
               <ResendButton quoteId={q.id} />
-              <SendInvoiceButton quoteId={q.id} />
+              <div className="sm:max-w-[13rem]">
+                <SendInvoiceButton
+                  quoteId={q.id}
+                  disabled={q.zohoInvoiceStatus === "void"}
+                  disabledReason="This Zoho invoice has been voided and cannot be sent again."
+                />
+              </div>
+              <div className="sm:max-w-[13rem]">
+                <VoidInvoiceButton quoteId={q.id} />
+              </div>
             </div>
             <p className="mt-3 text-xs text-[#303030]/70">
-              Resend will generate a new signing token. Send invoice creates a Zoho
-              invoice and emails it to the customer with the admin email in CC.
+              Resend will generate a new signing token. Send invoice creates or re-sends the
+              linked Zoho invoice. Void invoice will void the current Zoho invoice for this quote.
             </p>
           </section>
         </div>

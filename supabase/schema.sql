@@ -41,6 +41,11 @@ create index if not exists quotes_signing_token_idx on public.quotes (signing_to
 create index if not exists quotes_status_idx on public.quotes (status);
 alter table public.quotes add column if not exists quote_valid_until timestamptz null;
 alter table public.quotes add column if not exists company_uen text not null default '';
+alter table public.quotes add column if not exists zoho_invoice_id text null;
+alter table public.quotes add column if not exists zoho_invoice_number text null;
+alter table public.quotes add column if not exists zoho_invoice_url text null;
+alter table public.quotes add column if not exists zoho_invoice_sent_at timestamptz null;
+alter table public.quotes add column if not exists zoho_invoice_status text null;
 
 -- ---------------------------------------------------------------------------
 -- quote_signatures
