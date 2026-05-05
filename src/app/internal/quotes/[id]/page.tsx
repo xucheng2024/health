@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopySignLinkButton } from "@/app/internal/quotes/copy-sign-link-button";
 import { ResendButton } from "@/app/internal/quotes/resend-button";
+import { SendInvoiceButton } from "@/app/internal/quotes/send-invoice-button";
 import { QuotationDocument } from "@/components/quotation/quotation-document";
 import { getPlanById } from "@/data/plans";
 import { formatSingaporeDateTime } from "@/lib/datetime";
@@ -138,9 +139,11 @@ export default async function InternalQuoteDetailPage({
                 disabledReason="Signing link expired. Please resend first."
               />
               <ResendButton quoteId={q.id} />
+              <SendInvoiceButton quoteId={q.id} />
             </div>
             <p className="mt-3 text-xs text-[#303030]/70">
-              Resend will generate a new signing token and invalidate the previous link.
+              Resend will generate a new signing token. Send invoice creates a Zoho
+              invoice and emails it to the customer with the admin email in CC.
             </p>
           </section>
         </div>

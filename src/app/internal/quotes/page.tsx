@@ -4,6 +4,7 @@ import { listQuotesForAdmin } from "@/lib/quotes";
 import { formatSingaporeDateTime } from "@/lib/datetime";
 import { CopySignLinkButton } from "./copy-sign-link-button";
 import { ResendButton } from "./resend-button";
+import { SendInvoiceButton } from "./send-invoice-button";
 
 function formatTtl(expiresAt: string | null): string {
   if (!expiresAt) return "No expiry";
@@ -143,6 +144,9 @@ export default async function InternalQuotesPage() {
                       </Link>
                       <div className="mt-2">
                         <ResendButton quoteId={r.id} />
+                      </div>
+                      <div className="mt-2">
+                        <SendInvoiceButton quoteId={r.id} />
                       </div>
                     </td>
                   </tr>
