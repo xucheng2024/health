@@ -400,11 +400,16 @@ async function emailInvoice(
   accessToken: string,
   record: QuoteRecord,
   invoice: ZohoInvoice,
+  options?: {
+    toEmail?: string;
+    cc?: string[];
+  },
 ): Promise<string[]> {
-  const cc = config.adminEmail ? [config.adminEmail] : [];
+  const toEmail = options?.toEmail ?? record.quote.contactEmail;
+  const cc = options?.cc ?? (config.adminEmail ? [config.adminEmail] : []);
   const payload = {
     send_from_org_email_id: true,
-    to_mail_ids: [record.quote.contactEmail],
+    to_mail_ids: [toEmail],
     cc_mail_ids: cc,
     subject: `HealthOptix Invoice for ${record.quote.quoteNo}`,
     body: `Dear ${record.quote.contactName},<br><br>Please find attached the invoice for quotation ${record.quote.quoteNo}.<br><br>Thank you,<br>HealthOptix`,
@@ -420,6 +425,10 @@ async function emailInvoice(
 
 export async function createAndSendZohoInvoice(
   record: QuoteRecord,
+  options?: {
+    toEmail?: string;
+    cc?: string[];
+  },
 ): Promise<SendZohoInvoiceResult> {
   const config = getZohoConfig();
   const accessToken = await getAccessToken(config);
@@ -435,14 +444,14 @@ export async function createAndSendZohoInvoice(
       `Zoho invoice ${invoice.invoice_number ?? invoice.invoice_id} is voided and cannot be sent.`,
     );
   }
-  const cc = await emailInvoice(config, accessToken, record, invoice);
+  const cc = await emailInvoice(config, accessToken, record, invoice, options);
   await persistInvoiceReference(record.quote.id, invoice);
 
   return {
     invoiceId: String(invoice.invoice_id),
     invoiceNumber: invoice.invoice_number ?? null,
     invoiceUrl: invoice.invoice_url ?? null,
-    sentTo: record.quote.contactEmail,
+    sentTo: options?.toEmail ?? record.quote.contactEmail,
     cc,
     reusedExisting,
   };

@@ -5,8 +5,14 @@ import { createAndSendZohoInvoice, isZohoInvoiceConfigured } from "@/lib/zoho-in
 
 export const dynamic = "force-dynamic";
 
+type InvoiceBody = {
+  test?: boolean;
+};
+
+const TEST_INVOICE_EMAIL = "info@health-optix.com";
+
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   if (!isInternalAuthConfigured() || !(await hasInternalAccessOrCookie())) {
@@ -30,7 +36,16 @@ export async function POST(
   }
 
   try {
-    const result = await createAndSendZohoInvoice(record);
+    const body = (await request.json().catch(() => ({}))) as InvoiceBody;
+    const result = await createAndSendZohoInvoice(
+      record,
+      body.test
+        ? {
+            toEmail: TEST_INVOICE_EMAIL,
+            cc: [],
+          }
+        : undefined,
+    );
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error("createAndSendZohoInvoice failed", error);
