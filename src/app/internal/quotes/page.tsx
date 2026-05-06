@@ -116,7 +116,8 @@ export default async function InternalQuotesPage() {
                   <th className="px-3 py-3">Signed</th>
                   <th className="px-3 py-3">Expires</th>
                   <th className="px-3 py-3">TTL</th>
-                  <th className="px-3 py-3">Actions</th>
+                  <th className="px-3 py-3">Quote actions</th>
+                  <th className="px-3 py-3">Invoice actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -176,61 +177,54 @@ export default async function InternalQuotesPage() {
                       {formatTtl(r.signingTokenExpiresAt)}
                     </td>
                     <td className="px-3 py-3">
-                      <div className="w-[11rem] space-y-3">
-                        <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#003F73]/70">
-                            Quote
-                          </p>
-                          <Link
-                            href={`/internal/quotes/${r.id}`}
-                            className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-[#003F73]/20 bg-white px-3 py-2 text-xs font-semibold text-[#003F73] shadow-sm transition-colors hover:bg-slate-50"
-                          >
-                            View
-                          </Link>
-                          <CopySignLinkButton
-                            signingToken={r.signingToken}
-                            disabled={linkExpired}
-                            disabledReason="Signing link expired. Please resend first."
-                          />
-                          <ResendButton quoteId={r.id} />
-                        </div>
-
-                        <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#003F73]/70">
-                            Invoice
-                          </p>
-                          <SendInvoiceButton
-                            quoteId={r.id}
-                            invoiceUrl={r.zohoInvoiceUrl}
-                            disabled={r.zohoInvoiceStatus === "void"}
-                            disabledReason="This Zoho invoice has been voided and cannot be sent again."
-                          />
-                          {r.zohoInvoiceStatus === "void" ? (
-                            <ReissueInvoiceButton quoteId={r.id} />
-                          ) : null}
-                          <RecordPaymentButton
-                            quoteId={r.id}
-                            currency={r.currency}
-                            maxAmount={r.zohoInvoiceBalanceDue ?? r.total}
-                            disabled={
-                              r.zohoInvoiceStatus === "void" ||
-                              r.zohoInvoiceStatus === "none" ||
-                              r.zohoInvoiceStatus === "draft"
-                            }
-                            disabledReason={
-                              r.zohoInvoiceStatus === "none"
-                                ? "Create and send a Zoho invoice before recording payment."
-                                : r.zohoInvoiceStatus === "draft"
-                                  ? "Preview created a Zoho invoice draft. Send it before recording payment."
+                      <div className="w-[10.5rem] space-y-2">
+                        <Link
+                          href={`/internal/quotes/${r.id}`}
+                          className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-[#003F73]/20 bg-white px-3 py-2 text-xs font-semibold text-[#003F73] shadow-sm transition-colors hover:bg-slate-50"
+                        >
+                          View
+                        </Link>
+                        <CopySignLinkButton
+                          signingToken={r.signingToken}
+                          disabled={linkExpired}
+                          disabledReason="Signing link expired. Please resend first."
+                        />
+                        <ResendButton quoteId={r.id} />
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="w-[10.5rem] space-y-2">
+                        <SendInvoiceButton
+                          quoteId={r.id}
+                          invoiceUrl={r.zohoInvoiceUrl}
+                          disabled={r.zohoInvoiceStatus === "void"}
+                          disabledReason="This Zoho invoice has been voided and cannot be sent again."
+                        />
+                        {r.zohoInvoiceStatus === "void" ? (
+                          <ReissueInvoiceButton quoteId={r.id} />
+                        ) : null}
+                        <RecordPaymentButton
+                          quoteId={r.id}
+                          currency={r.currency}
+                          maxAmount={r.zohoInvoiceBalanceDue ?? r.total}
+                          disabled={
+                            r.zohoInvoiceStatus === "void" ||
+                            r.zohoInvoiceStatus === "none" ||
+                            r.zohoInvoiceStatus === "draft"
+                          }
+                          disabledReason={
+                            r.zohoInvoiceStatus === "none"
+                              ? "Create and send a Zoho invoice before recording payment."
+                              : r.zohoInvoiceStatus === "draft"
+                                ? "Preview created a Zoho invoice draft. Send it before recording payment."
                                 : "This Zoho invoice has been voided."
-                            }
-                          />
-                          <VoidInvoiceButton
-                            quoteId={r.id}
-                            disabled={r.zohoInvoiceStatus === "none"}
-                            disabledReason="Create a Zoho invoice before attempting to void it."
-                          />
-                        </div>
+                          }
+                        />
+                        <VoidInvoiceButton
+                          quoteId={r.id}
+                          disabled={r.zohoInvoiceStatus === "none"}
+                          disabledReason="Create a Zoho invoice before attempting to void it."
+                        />
                       </div>
                     </td>
                   </tr>
