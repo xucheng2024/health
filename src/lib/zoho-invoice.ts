@@ -24,6 +24,7 @@ type ZohoInvoice = {
   invoice_number?: string;
   invoice_url?: string;
   status?: string;
+  created_time?: string;
   customer_id?: string | number;
   payment_made?: string | number;
   balance?: string | number;
@@ -47,6 +48,12 @@ export type PreviewZohoInvoiceResult = {
   invoiceNumber: string | null;
   invoiceUrl: string | null;
   reusedExisting: boolean;
+};
+
+export type ReissueZohoInvoiceResult = {
+  invoiceId: string;
+  invoiceNumber: string | null;
+  invoiceUrl: string | null;
 };
 
 export type VoidZohoInvoiceResult = {
@@ -399,11 +406,43 @@ async function findInvoiceByReferenceNumber(
   });
   const data = await zohoRequest(config, accessToken, `/invoices?${params.toString()}`);
   const invoices = Array.isArray(data.invoices) ? data.invoices : [];
-  const match = invoices.find((invoice) => {
+  const candidates = invoices.filter((invoice) => {
     const candidate = invoice as Record<string, unknown>;
     return candidate.reference_number === referenceNumber && candidate.invoice_id;
-  }) as ZohoInvoice | undefined;
-  return match?.invoice_id ? match : null;
+  }) as ZohoInvoice[];
+
+  if (candidates.length === 0) return null;
+
+  const timestamp = (value?: string): number => {
+    if (!value) return 0;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  const statusRank = (status?: string): number => {
+    if (status === "void") return 0;
+    if (status === "paid") return 3;
+    if (
+      status === "sent" ||
+      status === "viewed" ||
+      status === "overdue" ||
+      status === "unpaid" ||
+      status === "partially_paid"
+    ) {
+      return 2;
+    }
+    if (status === "draft") return 1;
+    return 1;
+  };
+
+  candidates.sort((a, b) => {
+    const rankDiff = statusRank(b.status) - statusRank(a.status);
+    if (rankDiff !== 0) return rankDiff;
+    const timeDiff = timestamp(b.created_time) - timestamp(a.created_time);
+    if (timeDiff !== 0) return timeDiff;
+    return Number(b.invoice_id) - Number(a.invoice_id);
+  });
+
+  return candidates[0] ?? null;
 }
 
 async function persistInvoiceReference(
@@ -581,15 +620,42 @@ export async function previewZohoInvoice(
     );
   }
 
-  await persistInvoiceReference(record.quote.id, invoice, {
-    forceStatus: invoice.status === "paid" ? "paid" : invoice.status === "draft" ? "draft" : "draft",
-  });
+  await persistInvoiceReference(record.quote.id, invoice);
 
   return {
     invoiceId: String(invoice.invoice_id),
     invoiceNumber: invoice.invoice_number ?? null,
     invoiceUrl: invoice.invoice_url ?? null,
     reusedExisting,
+  };
+}
+
+export async function reissueZohoInvoice(
+  record: QuoteRecord,
+): Promise<ReissueZohoInvoiceResult> {
+  const config = getZohoConfig();
+  const accessToken = await getAccessToken(config);
+  const existingInvoice = await findExistingInvoiceForQuote(config, accessToken, record);
+
+  if (!existingInvoice) {
+    throw new Error(`No Zoho invoice found for quotation ${record.quote.quoteNo}.`);
+  }
+  if (existingInvoice.status !== "void") {
+    throw new Error(
+      `Zoho invoice ${existingInvoice.invoice_number ?? existingInvoice.invoice_id} must be voided before reissuing.`,
+    );
+  }
+
+  const contact = await createContact(config, accessToken, record);
+  const replacementInvoice = await createInvoice(config, accessToken, record, contact);
+  await persistInvoiceReference(record.quote.id, replacementInvoice, {
+    forceStatus: replacementInvoice.status === "paid" ? "paid" : "draft",
+  });
+
+  return {
+    invoiceId: String(replacementInvoice.invoice_id),
+    invoiceNumber: replacementInvoice.invoice_number ?? null,
+    invoiceUrl: replacementInvoice.invoice_url ?? null,
   };
 }
 

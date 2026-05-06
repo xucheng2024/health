@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type PaymentResponse = {
@@ -27,6 +28,7 @@ export function RecordPaymentButton({
   disabled?: boolean;
   disabledReason?: string;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState(maxAmount && maxAmount > 0 ? String(maxAmount) : "");
@@ -75,6 +77,7 @@ export function RecordPaymentButton({
           : "updated";
       setMessage(`${invoiceLabel}: paid ${paidText}, balance due ${balanceText}.`);
       setOpen(false);
+      router.refresh();
     } catch {
       setError("Network error. Please try again.");
     } finally {

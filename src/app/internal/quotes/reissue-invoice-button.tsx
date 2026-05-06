@@ -3,14 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type VoidInvoiceResponse = {
+type ReissueInvoiceResponse = {
   error?: string;
   invoiceId?: string;
   invoiceNumber?: string | null;
-  alreadyVoided?: boolean;
+  invoiceUrl?: string | null;
 };
 
-export function VoidInvoiceButton({
+export function ReissueInvoiceButton({
   quoteId,
   disabled = false,
   disabledReason,
@@ -24,10 +24,10 @@ export function VoidInvoiceButton({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const voidInvoice = async () => {
+  const reissueInvoice = async () => {
     if (loading || disabled) return;
     const confirmed = window.confirm(
-      "Void this Zoho invoice? This affects the existing invoice linked to this quotation.",
+      "Create a replacement Zoho invoice for this voided quotation? The new invoice will open in preview and will not be emailed automatically.",
     );
     if (!confirmed) return;
 
@@ -37,25 +37,24 @@ export function VoidInvoiceButton({
 
     try {
       const res = await fetch(
-        `/api/internal/quotes/${encodeURIComponent(quoteId)}/invoice/void`,
+        `/api/internal/quotes/${encodeURIComponent(quoteId)}/invoice/reissue`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({}),
         },
       );
-      const data = (await res.json()) as VoidInvoiceResponse;
+      const data = (await res.json()) as ReissueInvoiceResponse;
       if (!res.ok) {
-        setError(data.error ?? "Unable to void invoice.");
+        setError(data.error ?? "Unable to reissue invoice.");
         return;
       }
 
       const invoiceLabel = data.invoiceNumber || data.invoiceId || "invoice";
-      setMessage(
-        data.alreadyVoided
-          ? `Zoho invoice ${invoiceLabel} was already voided.`
-          : `Zoho invoice ${invoiceLabel} has been voided.`,
-      );
+      if (data.invoiceUrl) {
+        window.open(data.invoiceUrl, "_blank", "noopener,noreferrer");
+      }
+      setMessage(`Created replacement Zoho invoice ${invoiceLabel} and opened preview.`);
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -68,12 +67,12 @@ export function VoidInvoiceButton({
     <div className="w-full">
       <button
         type="button"
-        onClick={() => void voidInvoice()}
+        onClick={() => void reissueInvoice()}
         disabled={loading || disabled}
-        title={disabled ? disabledReason ?? "Invoice cannot be voided." : undefined}
-        className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-rose-700/20 bg-white px-3 py-2 text-xs font-semibold text-rose-800 shadow-sm transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
+        title={disabled ? disabledReason ?? "Invoice cannot be reissued." : undefined}
+        className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-violet-700/20 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
       >
-        {loading ? "Voiding invoice..." : "Void invoice"}
+        {loading ? "Reissuing invoice..." : "Reissue invoice"}
       </button>
       {message ? <p className="mt-2 text-xs text-emerald-700">{message}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}

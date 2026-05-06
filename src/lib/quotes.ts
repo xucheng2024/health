@@ -509,6 +509,7 @@ export type AdminQuoteListItem = {
   signingToken: string;
   zohoInvoiceStatus: ZohoInvoiceStatus;
   zohoInvoiceNumber: string | null;
+  zohoInvoiceUrl: string | null;
   zohoInvoicePaidAmount: number | null;
   zohoInvoiceBalanceDue: number | null;
 };
@@ -533,7 +534,7 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
   const { data, error } = await supabase
     .from("quotes")
     .select(
-      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, quote_valid_until, signing_token_expires_at, sent_at, created_at, signed_at, signing_token, zoho_invoice_status, zoho_invoice_number, zoho_invoice_paid_amount, zoho_invoice_balance_due",
+      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, quote_valid_until, signing_token_expires_at, sent_at, created_at, signed_at, signing_token, zoho_invoice_status, zoho_invoice_number, zoho_invoice_url, zoho_invoice_paid_amount, zoho_invoice_balance_due",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -563,6 +564,7 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
     signingToken: r.signing_token as string,
     zohoInvoiceStatus: mapZohoInvoiceStatus((r.zoho_invoice_status as string | null) ?? null),
     zohoInvoiceNumber: (r.zoho_invoice_number as string | null) ?? null,
+    zohoInvoiceUrl: (r.zoho_invoice_url as string | null) ?? null,
     zohoInvoicePaidAmount:
       r.zoho_invoice_paid_amount === null ? null : num(r.zoho_invoice_paid_amount as string | number),
     zohoInvoiceBalanceDue:

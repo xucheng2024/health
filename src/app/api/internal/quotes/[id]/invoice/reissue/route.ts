@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
 import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/internal-auth";
 import { getQuoteRecordForAdmin } from "@/lib/quotes";
-import {
-  createAndSendZohoInvoice,
-  isZohoInvoiceConfigured,
-  previewZohoInvoice,
-} from "@/lib/zoho-invoice";
+import { isZohoInvoiceConfigured, reissueZohoInvoice } from "@/lib/zoho-invoice";
 
 export const dynamic = "force-dynamic";
 
-type InvoiceBody = {
-  preview?: boolean;
-};
-
 export async function POST(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   if (!isInternalAuthConfigured() || !(await hasInternalAccessOrCookie())) {
@@ -38,17 +30,12 @@ export async function POST(
   }
 
   try {
-    const body = (await request.json().catch(() => ({}))) as InvoiceBody;
-    const result = body.preview
-      ? await previewZohoInvoice(record)
-      : await createAndSendZohoInvoice(record);
+    const result = await reissueZohoInvoice(record);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error("invoice route failed", error);
+    console.error("reissueZohoInvoice failed", error);
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Unable to process invoice request.",
-      },
+      { error: error instanceof Error ? error.message : "Unable to reissue invoice." },
       { status: 502 },
     );
   }

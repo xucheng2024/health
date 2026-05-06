@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopySignLinkButton } from "@/app/internal/quotes/copy-sign-link-button";
 import { RecordPaymentButton } from "@/app/internal/quotes/record-payment-button";
+import { ReissueInvoiceButton } from "@/app/internal/quotes/reissue-invoice-button";
 import { ResendButton } from "@/app/internal/quotes/resend-button";
 import { SendInvoiceButton } from "@/app/internal/quotes/send-invoice-button";
 import { VoidInvoiceButton } from "@/app/internal/quotes/void-invoice-button";
@@ -188,48 +189,74 @@ export default async function InternalQuoteDetailPage({
 
           <section className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[#003F73]">Actions</h2>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <CopySignLinkButton
-                signingToken={q.signingToken}
-                disabled={linkExpired}
-                disabledReason="Signing link expired. Please resend first."
-              />
-              <ResendButton quoteId={q.id} />
-              <div className="sm:max-w-[13rem]">
-                <SendInvoiceButton
-                  quoteId={q.id}
-                  disabled={q.zohoInvoiceStatus === "void"}
-                  disabledReason="This Zoho invoice has been voided and cannot be sent again."
-                />
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#003F73]/70">
+                  Quote
+                </p>
+                <div className="mt-2 grid gap-2">
+                  <CopySignLinkButton
+                    signingToken={q.signingToken}
+                    disabled={linkExpired}
+                    disabledReason="Signing link expired. Please resend first."
+                  />
+                  <ResendButton quoteId={q.id} />
+                </div>
               </div>
-              <div className="sm:max-w-[13rem]">
-                <RecordPaymentButton
-                  quoteId={q.id}
-                  currency={q.currency}
-                  maxAmount={q.zohoInvoiceBalanceDue ?? q.total}
-                  disabled={
-                    q.zohoInvoiceStatus === "void" ||
-                    q.zohoInvoiceStatus === "none" ||
-                    q.zohoInvoiceStatus === "draft"
-                  }
-                  disabledReason={
-                    q.zohoInvoiceStatus === "none"
-                      ? "Create and send a Zoho invoice before recording payment."
-                      : q.zohoInvoiceStatus === "draft"
-                        ? "Preview created a Zoho invoice draft. Send it before recording payment."
-                      : "This Zoho invoice has been voided."
-                  }
-                />
-              </div>
-              <div className="sm:max-w-[13rem]">
-                <VoidInvoiceButton quoteId={q.id} />
+
+              <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#003F73]/70">
+                  Invoice
+                </p>
+                <div className="mt-2 grid gap-2">
+                  <div className="sm:max-w-[13rem]">
+                    <SendInvoiceButton
+                      quoteId={q.id}
+                      invoiceUrl={q.zohoInvoiceUrl}
+                      disabled={q.zohoInvoiceStatus === "void"}
+                      disabledReason="This Zoho invoice has been voided and cannot be sent again."
+                    />
+                  </div>
+                  {q.zohoInvoiceStatus === "void" ? (
+                    <div className="sm:max-w-[13rem]">
+                      <ReissueInvoiceButton quoteId={q.id} />
+                    </div>
+                  ) : null}
+                  <div className="sm:max-w-[13rem]">
+                    <RecordPaymentButton
+                      quoteId={q.id}
+                      currency={q.currency}
+                      maxAmount={q.zohoInvoiceBalanceDue ?? q.total}
+                      disabled={
+                        q.zohoInvoiceStatus === "void" ||
+                        q.zohoInvoiceStatus === "none" ||
+                        q.zohoInvoiceStatus === "draft"
+                      }
+                      disabledReason={
+                        q.zohoInvoiceStatus === "none"
+                          ? "Create and send a Zoho invoice before recording payment."
+                          : q.zohoInvoiceStatus === "draft"
+                            ? "Preview created a Zoho invoice draft. Send it before recording payment."
+                          : "This Zoho invoice has been voided."
+                      }
+                    />
+                  </div>
+                  <div className="sm:max-w-[13rem]">
+                    <VoidInvoiceButton
+                      quoteId={q.id}
+                      disabled={q.zohoInvoiceStatus === "none"}
+                      disabledReason="Create a Zoho invoice before attempting to void it."
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <p className="mt-3 text-xs text-[#303030]/70">
-              Resend will generate a new signing token. Preview invoice creates or reuses the
-              linked Zoho invoice and opens the Zoho preview without emailing the customer. Send
-              invoice sends that same linked invoice. Void invoice will void the current Zoho
-              invoice for this quote.
+              Resend will generate a new signing token. If a Zoho invoice already exists, you can
+              open it directly from the invoice action. Otherwise preview will create or reuse the
+              linked Zoho invoice without emailing the customer, and send will deliver that same
+              linked invoice. Void invoice will void the current Zoho invoice for this quote.
+              Reissue invoice creates a replacement draft after a void and opens its preview.
             </p>
           </section>
         </div>

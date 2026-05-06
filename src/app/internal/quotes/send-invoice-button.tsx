@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type InvoiceResponse = {
@@ -14,13 +15,16 @@ type InvoiceResponse = {
 
 export function SendInvoiceButton({
   quoteId,
+  invoiceUrl,
   disabled = false,
   disabledReason,
 }: {
   quoteId: string;
+  invoiceUrl?: string | null;
   disabled?: boolean;
   disabledReason?: string;
 }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -48,6 +52,7 @@ export function SendInvoiceButton({
       const ccText = data.cc && data.cc.length > 0 ? ` CC: ${data.cc.join(", ")}.` : "";
       const actionText = data.reusedExisting ? "re-sent" : "created and sent";
       setMessage(`Zoho invoice ${invoiceLabel} ${actionText} to ${data.sentTo}.${ccText}`);
+      router.refresh();
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -82,6 +87,7 @@ export function SendInvoiceButton({
           ? `Opened Zoho invoice ${invoiceLabel} preview.`
           : `Created Zoho invoice ${invoiceLabel} and opened preview.`,
       );
+      router.refresh();
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -100,15 +106,26 @@ export function SendInvoiceButton({
       >
         {loading ? "Sending invoice..." : "Send invoice"}
       </button>
-      <button
-        type="button"
-        onClick={() => void previewInvoice()}
-        disabled={loading || loadingPreview || disabled}
-        title={disabled ? disabledReason ?? "Invoice cannot be previewed." : "Create or reuse the Zoho invoice and open its preview without emailing the customer."}
-        className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-sky-700/20 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 shadow-sm transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
-      >
-        {loadingPreview ? "Opening preview..." : "Preview invoice"}
-      </button>
+      {invoiceUrl ? (
+        <a
+          href={invoiceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-sky-700/20 bg-white px-3 py-2 text-xs font-semibold text-sky-900 shadow-sm transition-colors hover:bg-sky-50"
+        >
+          Open Zoho
+        </a>
+      ) : (
+        <button
+          type="button"
+          onClick={() => void previewInvoice()}
+          disabled={loading || loadingPreview || disabled}
+          title={disabled ? disabledReason ?? "Invoice cannot be previewed." : "Create or reuse the Zoho invoice and open its preview without emailing the customer."}
+          className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-sky-700/20 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 shadow-sm transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
+        >
+          {loadingPreview ? "Opening preview..." : "Preview invoice"}
+        </button>
+      )}
       {message ? <p className="mt-2 text-xs text-emerald-700">{message}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}
     </div>
