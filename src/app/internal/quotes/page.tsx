@@ -3,6 +3,7 @@ import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/inter
 import { listQuotesForAdmin } from "@/lib/quotes";
 import { formatSingaporeDateTime } from "@/lib/datetime";
 import { CopySignLinkButton } from "./copy-sign-link-button";
+import { RecordPaymentButton } from "./record-payment-button";
 import { ResendButton } from "./resend-button";
 import { SendInvoiceButton } from "./send-invoice-button";
 import { VoidInvoiceButton } from "./void-invoice-button";
@@ -24,15 +25,23 @@ function formatTtl(expiresAt: string | null): string {
   return diffMs >= 0 ? `${text} left` : `expired ${text} ago`;
 }
 
-function zohoInvoiceStatusLabel(status: "none" | "sent" | "void"): string {
+function zohoInvoiceStatusLabel(status: "none" | "draft" | "sent" | "paid" | "void"): string {
+  if (status === "draft") return "Invoice draft";
   if (status === "sent") return "Invoice sent";
+  if (status === "paid") return "Paid";
   if (status === "void") return "Invoice voided";
   return "No invoice";
 }
 
-function zohoInvoiceStatusClass(status: "none" | "sent" | "void"): string {
+function zohoInvoiceStatusClass(status: "none" | "draft" | "sent" | "paid" | "void"): string {
+  if (status === "draft") {
+    return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+  }
   if (status === "sent") {
     return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200";
+  }
+  if (status === "paid") {
+    return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
   }
   if (status === "void") {
     return "bg-rose-50 text-rose-800 ring-1 ring-rose-200";
@@ -100,6 +109,8 @@ export default async function InternalQuotesPage() {
                   <th className="px-3 py-3">Total</th>
                   <th className="px-3 py-3">Status</th>
                   <th className="px-3 py-3">Invoice</th>
+                  <th className="px-3 py-3">Paid</th>
+                  <th className="px-3 py-3">Balance</th>
                   <th className="px-3 py-3">Created</th>
                   <th className="px-3 py-3">Signed</th>
                   <th className="px-3 py-3">Expires</th>
@@ -144,6 +155,12 @@ export default async function InternalQuotesPage() {
                         ) : null}
                       </div>
                     </td>
+                    <td className="px-3 py-3 text-xs tabular-nums text-[#303030]/85">
+                      {r.zohoInvoicePaidAmount === null ? "—" : `${r.currency} ${r.zohoInvoicePaidAmount.toFixed(2)}`}
+                    </td>
+                    <td className="px-3 py-3 text-xs tabular-nums text-[#303030]/85">
+                      {r.zohoInvoiceBalanceDue === null ? "—" : `${r.currency} ${r.zohoInvoiceBalanceDue.toFixed(2)}`}
+                    </td>
                     <td className="px-3 py-3 text-xs text-[#303030]/85">
                       {formatSingaporeDateTime(r.createdAt)}
                     </td>
@@ -178,6 +195,23 @@ export default async function InternalQuotesPage() {
                           quoteId={r.id}
                           disabled={r.zohoInvoiceStatus === "void"}
                           disabledReason="This Zoho invoice has been voided and cannot be sent again."
+                        />
+                        <RecordPaymentButton
+                          quoteId={r.id}
+                          currency={r.currency}
+                          maxAmount={r.zohoInvoiceBalanceDue ?? r.total}
+                          disabled={
+                            r.zohoInvoiceStatus === "void" ||
+                            r.zohoInvoiceStatus === "none" ||
+                            r.zohoInvoiceStatus === "draft"
+                          }
+                          disabledReason={
+                            r.zohoInvoiceStatus === "none"
+                              ? "Create and send a Zoho invoice before recording payment."
+                              : r.zohoInvoiceStatus === "draft"
+                                ? "Preview created a Zoho invoice draft. Send it before recording payment."
+                              : "This Zoho invoice has been voided."
+                          }
                         />
                         <VoidInvoiceButton quoteId={r.id} />
                       </div>

@@ -22,17 +22,13 @@ export function SendInvoiceButton({
   disabledReason?: string;
 }) {
   const [loading, setLoading] = useState(false);
-  const [loadingTest, setLoadingTest] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const sendInvoice = async (mode: "live" | "test") => {
-    if (loading || loadingTest || disabled) return;
-    if (mode === "test") {
-      setLoadingTest(true);
-    } else {
-      setLoading(true);
-    }
+  const sendInvoice = async () => {
+    if (loading || loadingPreview || disabled) return;
+    setLoading(true);
     setError(null);
     setMessage(null);
 
@@ -40,7 +36,7 @@ export function SendInvoiceButton({
       const res = await fetch(`/api/internal/quotes/${encodeURIComponent(quoteId)}/invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mode === "test" ? { test: true } : {}),
+        body: JSON.stringify({}),
       });
       const data = (await res.json()) as InvoiceResponse;
       if (!res.ok) {
@@ -51,13 +47,45 @@ export function SendInvoiceButton({
       const invoiceLabel = data.invoiceNumber || data.invoiceId || "invoice";
       const ccText = data.cc && data.cc.length > 0 ? ` CC: ${data.cc.join(", ")}.` : "";
       const actionText = data.reusedExisting ? "re-sent" : "created and sent";
-      const modeText = mode === "test" ? "Test invoice" : `Zoho invoice ${invoiceLabel}`;
-      setMessage(`${modeText} ${actionText} to ${data.sentTo}.${ccText}`);
+      setMessage(`Zoho invoice ${invoiceLabel} ${actionText} to ${data.sentTo}.${ccText}`);
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
-      setLoadingTest(false);
+    }
+  };
+
+  const previewInvoice = async () => {
+    if (loading || loadingPreview || disabled) return;
+    setLoadingPreview(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const res = await fetch(`/api/internal/quotes/${encodeURIComponent(quoteId)}/invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preview: true }),
+      });
+      const data = (await res.json()) as InvoiceResponse;
+      if (!res.ok) {
+        setError(data.error ?? "Unable to preview invoice.");
+        return;
+      }
+
+      const invoiceLabel = data.invoiceNumber || data.invoiceId || "invoice";
+      if (data.invoiceUrl) {
+        window.open(data.invoiceUrl, "_blank", "noopener,noreferrer");
+      }
+      setMessage(
+        data.reusedExisting
+          ? `Opened Zoho invoice ${invoiceLabel} preview.`
+          : `Created Zoho invoice ${invoiceLabel} and opened preview.`,
+      );
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoadingPreview(false);
     }
   };
 
@@ -65,8 +93,8 @@ export function SendInvoiceButton({
     <div className="w-full space-y-2">
       <button
         type="button"
-        onClick={() => void sendInvoice("live")}
-        disabled={loading || loadingTest || disabled}
+        onClick={() => void sendInvoice()}
+        disabled={loading || loadingPreview || disabled}
         title={disabled ? disabledReason ?? "Invoice cannot be sent." : undefined}
         className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-emerald-700/20 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 shadow-sm transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
       >
@@ -74,12 +102,12 @@ export function SendInvoiceButton({
       </button>
       <button
         type="button"
-        onClick={() => void sendInvoice("test")}
-        disabled={loading || loadingTest || disabled}
-        title={disabled ? disabledReason ?? "Invoice cannot be sent." : "Send only to info@health-optix.com"}
-        className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-amber-700/20 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
+        onClick={() => void previewInvoice()}
+        disabled={loading || loadingPreview || disabled}
+        title={disabled ? disabledReason ?? "Invoice cannot be previewed." : "Create or reuse the Zoho invoice and open its preview without emailing the customer."}
+        className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-sky-700/20 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 shadow-sm transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
       >
-        {loadingTest ? "Sending test..." : "Send test to info@health-optix.com"}
+        {loadingPreview ? "Opening preview..." : "Preview invoice"}
       </button>
       {message ? <p className="mt-2 text-xs text-emerald-700">{message}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}

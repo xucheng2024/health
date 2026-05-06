@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopySignLinkButton } from "@/app/internal/quotes/copy-sign-link-button";
+import { RecordPaymentButton } from "@/app/internal/quotes/record-payment-button";
 import { ResendButton } from "@/app/internal/quotes/resend-button";
 import { SendInvoiceButton } from "@/app/internal/quotes/send-invoice-button";
 import { VoidInvoiceButton } from "@/app/internal/quotes/void-invoice-button";
@@ -12,14 +13,22 @@ import { getQuoteRecordForAdmin, getQuoteSnapshotByQuoteId } from "@/lib/quotes"
 import type { ZohoInvoiceStatus } from "@/lib/types";
 
 function zohoInvoiceStatusLabel(status: ZohoInvoiceStatus): string {
+  if (status === "draft") return "Invoice draft";
   if (status === "sent") return "Invoice sent";
+  if (status === "paid") return "Paid";
   if (status === "void") return "Invoice voided";
   return "No invoice";
 }
 
 function zohoInvoiceStatusClass(status: ZohoInvoiceStatus): string {
+  if (status === "draft") {
+    return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+  }
   if (status === "sent") {
     return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200";
+  }
+  if (status === "paid") {
+    return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
   }
   if (status === "void") {
     return "bg-rose-50 text-rose-800 ring-1 ring-rose-200";
@@ -158,6 +167,22 @@ export default async function InternalQuoteDetailPage({
                   ) : null}
                 </dd>
               </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#303030]/70">Paid</dt>
+                <dd className="font-medium">
+                  {q.zohoInvoicePaidAmount === null
+                    ? "—"
+                    : `${q.currency} ${q.zohoInvoicePaidAmount.toFixed(2)}`}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#303030]/70">Balance due</dt>
+                <dd className="font-medium">
+                  {q.zohoInvoiceBalanceDue === null
+                    ? "—"
+                    : `${q.currency} ${q.zohoInvoiceBalanceDue.toFixed(2)}`}
+                </dd>
+              </div>
             </dl>
           </section>
 
@@ -178,12 +203,33 @@ export default async function InternalQuoteDetailPage({
                 />
               </div>
               <div className="sm:max-w-[13rem]">
+                <RecordPaymentButton
+                  quoteId={q.id}
+                  currency={q.currency}
+                  maxAmount={q.zohoInvoiceBalanceDue ?? q.total}
+                  disabled={
+                    q.zohoInvoiceStatus === "void" ||
+                    q.zohoInvoiceStatus === "none" ||
+                    q.zohoInvoiceStatus === "draft"
+                  }
+                  disabledReason={
+                    q.zohoInvoiceStatus === "none"
+                      ? "Create and send a Zoho invoice before recording payment."
+                      : q.zohoInvoiceStatus === "draft"
+                        ? "Preview created a Zoho invoice draft. Send it before recording payment."
+                      : "This Zoho invoice has been voided."
+                  }
+                />
+              </div>
+              <div className="sm:max-w-[13rem]">
                 <VoidInvoiceButton quoteId={q.id} />
               </div>
             </div>
             <p className="mt-3 text-xs text-[#303030]/70">
-              Resend will generate a new signing token. Send invoice creates or re-sends the
-              linked Zoho invoice. Void invoice will void the current Zoho invoice for this quote.
+              Resend will generate a new signing token. Preview invoice creates or reuses the
+              linked Zoho invoice and opens the Zoho preview without emailing the customer. Send
+              invoice sends that same linked invoice. Void invoice will void the current Zoho
+              invoice for this quote.
             </p>
           </section>
         </div>

@@ -24,6 +24,13 @@ type ZohoInvoice = {
   invoice_number?: string;
   invoice_url?: string;
   status?: string;
+  customer_id?: string | number;
+  payment_made?: string | number;
+  balance?: string | number;
+};
+
+type ZohoPayment = {
+  payment_id: string | number;
 };
 
 export type SendZohoInvoiceResult = {
@@ -35,10 +42,26 @@ export type SendZohoInvoiceResult = {
   reusedExisting: boolean;
 };
 
+export type PreviewZohoInvoiceResult = {
+  invoiceId: string;
+  invoiceNumber: string | null;
+  invoiceUrl: string | null;
+  reusedExisting: boolean;
+};
+
 export type VoidZohoInvoiceResult = {
   invoiceId: string;
   invoiceNumber: string | null;
   alreadyVoided: boolean;
+};
+
+export type RecordZohoPaymentResult = {
+  paymentId: string;
+  invoiceId: string;
+  invoiceNumber: string | null;
+  paidAmount: number | null;
+  balanceDue: number | null;
+  invoiceStatus: "sent" | "paid" | "void";
 };
 
 export function isZohoInvoiceConfigured(): boolean {
@@ -82,6 +105,11 @@ function getZohoConfig(): ZohoConfig {
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
+}
+
+function num(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  return typeof value === "number" ? value : Number(value);
 }
 
 async function readZohoJson(response: Response): Promise<Record<string, unknown>> {
@@ -157,6 +185,51 @@ function addDays(date: Date, days: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+function invoiceNumberDatePart(date: Date): string {
+  return toIsoDate(date).replace(/-/g, "");
+}
+
+function buildInvoiceNumber(datePart: string, sequence: number): string {
+  return `INV-${datePart}-${String(sequence).padStart(4, "0")}`;
+}
+
+function parseInvoiceSequence(invoiceNumber: string, datePart: string): number | null {
+  const match = invoiceNumber.match(new RegExp(`^INV-${datePart}-(\\d{4,})$`));
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+function isDuplicateInvoiceNumberError(error: unknown): boolean {
+  return error instanceof Error && /"code"\s*:\s*1001/.test(error.message);
+}
+
+async function getNextInvoiceSequenceForDate(datePart: string): Promise<number> {
+  const supabase = getSupabaseServiceRole();
+  const prefix = `INV-${datePart}-`;
+  const { data, error } = await supabase
+    .from("quotes")
+    .select("zoho_invoice_number")
+    .ilike("zoho_invoice_number", `${prefix}%`);
+
+  if (error || !Array.isArray(data)) {
+    if (error) {
+      console.error("getNextInvoiceSequenceForDate", error);
+    }
+    return 1;
+  }
+
+  let maxSequence = 0;
+  for (const row of data as Array<{ zoho_invoice_number: string | null }>) {
+    if (!row.zoho_invoice_number) continue;
+    const sequence = parseInvoiceSequence(row.zoho_invoice_number, datePart);
+    if (sequence && sequence > maxSequence) {
+      maxSequence = sequence;
+    }
+  }
+
+  return maxSequence + 1;
 }
 
 function invoiceLineItems(record: QuoteRecord, config: ZohoConfig): Record<string, unknown>[] {
@@ -254,36 +327,51 @@ async function createInvoice(
   contact: ZohoContact,
 ): Promise<ZohoInvoice> {
   const today = new Date();
-  const payload: Record<string, unknown> = {
-    customer_id: String(contact.contact_id),
-    contact_persons: contact.primary_contact_id ? [String(contact.primary_contact_id)] : undefined,
-    date: toIsoDate(today),
-    due_date: toIsoDate(addDays(today, config.paymentTerms ?? 0)),
-    payment_terms: config.paymentTerms ?? 0,
-    reference_number: record.quote.quoteNo,
-    currency_code: record.quote.currency,
-    line_items: invoiceLineItems(record, config),
-    notes: `Generated from HealthOptix quotation ${record.quote.quoteNo}.`,
-    terms: "Full payment must be made prior to system deployment unless otherwise agreed.",
-  };
+  const datePart = invoiceNumberDatePart(today);
+  const nextSequence = await getNextInvoiceSequenceForDate(datePart);
 
-  if (record.quote.discount > 0) {
-    payload.discount = record.quote.discount;
-    payload.discount_type = "entity_level";
-    payload.is_discount_before_tax = true;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const payload: Record<string, unknown> = {
+      customer_id: String(contact.contact_id),
+      contact_persons: contact.primary_contact_id ? [String(contact.primary_contact_id)] : undefined,
+      date: toIsoDate(today),
+      due_date: toIsoDate(addDays(today, config.paymentTerms ?? 0)),
+      payment_terms: config.paymentTerms ?? 0,
+      invoice_number: buildInvoiceNumber(datePart, nextSequence + attempt),
+      reference_number: record.quote.quoteNo,
+      currency_code: record.quote.currency,
+      line_items: invoiceLineItems(record, config),
+      notes: `Generated from HealthOptix quotation ${record.quote.quoteNo}.`,
+      terms: "Full payment must be made prior to system deployment unless otherwise agreed.",
+    };
+
+    if (record.quote.discount > 0) {
+      payload.discount = record.quote.discount;
+      payload.discount_type = "entity_level";
+      payload.is_discount_before_tax = true;
+    }
+
+    try {
+      const data = await zohoRequest(config, accessToken, "/invoices", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const invoice = data.invoice as ZohoInvoice | undefined;
+
+      if (!invoice?.invoice_id) {
+        throw new Error(`Zoho invoice create returned no invoice_id: ${JSON.stringify(data)}`);
+      }
+
+      return invoice;
+    } catch (error) {
+      if (isDuplicateInvoiceNumberError(error) && attempt < 9) {
+        continue;
+      }
+      throw error;
+    }
   }
 
-  const data = await zohoRequest(config, accessToken, "/invoices", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-  const invoice = data.invoice as ZohoInvoice | undefined;
-
-  if (!invoice?.invoice_id) {
-    throw new Error(`Zoho invoice create returned no invoice_id: ${JSON.stringify(data)}`);
-  }
-
-  return invoice;
+  throw new Error(`Unable to allocate a unique Zoho invoice number for ${datePart}.`);
 }
 
 async function getInvoiceById(
@@ -321,8 +409,20 @@ async function findInvoiceByReferenceNumber(
 async function persistInvoiceReference(
   quoteId: string,
   invoice: ZohoInvoice,
+  options?: {
+    markSent?: boolean;
+    forceStatus?: "draft" | "sent" | "paid" | "void";
+  },
 ): Promise<void> {
-  const status = invoice.status === "void" ? "void" : "sent";
+  const normalizedStatus =
+    options?.forceStatus ??
+    (invoice.status === "void"
+      ? "void"
+      : invoice.status === "paid"
+        ? "paid"
+        : invoice.status === "draft"
+          ? "draft"
+          : "sent");
   const supabase = getSupabaseServiceRole();
   const now = new Date().toISOString();
   const { error } = await supabase
@@ -331,8 +431,10 @@ async function persistInvoiceReference(
       zoho_invoice_id: String(invoice.invoice_id),
       zoho_invoice_number: invoice.invoice_number ?? null,
       zoho_invoice_url: invoice.invoice_url ?? null,
-      zoho_invoice_sent_at: now,
-      zoho_invoice_status: status,
+      zoho_invoice_sent_at: options?.markSent ? now : undefined,
+      zoho_invoice_status: normalizedStatus,
+      zoho_invoice_paid_amount: num(invoice.payment_made),
+      zoho_invoice_balance_due: num(invoice.balance),
       updated_at: now,
     })
     .eq("id", quoteId);
@@ -445,7 +547,10 @@ export async function createAndSendZohoInvoice(
     );
   }
   const cc = await emailInvoice(config, accessToken, record, invoice, options);
-  await persistInvoiceReference(record.quote.id, invoice);
+  await persistInvoiceReference(record.quote.id, invoice, {
+    markSent: true,
+    forceStatus: invoice.status === "paid" ? "paid" : "sent",
+  });
 
   return {
     invoiceId: String(invoice.invoice_id),
@@ -453,6 +558,37 @@ export async function createAndSendZohoInvoice(
     invoiceUrl: invoice.invoice_url ?? null,
     sentTo: options?.toEmail ?? record.quote.contactEmail,
     cc,
+    reusedExisting,
+  };
+}
+
+export async function previewZohoInvoice(
+  record: QuoteRecord,
+): Promise<PreviewZohoInvoiceResult> {
+  const config = getZohoConfig();
+  const accessToken = await getAccessToken(config);
+  const contact = await createContact(config, accessToken, record);
+  const { invoice, reusedExisting } = await getOrCreateInvoice(
+    config,
+    accessToken,
+    record,
+    contact,
+  );
+
+  if (invoice.status === "void") {
+    throw new Error(
+      `Zoho invoice ${invoice.invoice_number ?? invoice.invoice_id} is voided and cannot be previewed.`,
+    );
+  }
+
+  await persistInvoiceReference(record.quote.id, invoice, {
+    forceStatus: invoice.status === "paid" ? "paid" : invoice.status === "draft" ? "draft" : "draft",
+  });
+
+  return {
+    invoiceId: String(invoice.invoice_id),
+    invoiceNumber: invoice.invoice_number ?? null,
+    invoiceUrl: invoice.invoice_url ?? null,
     reusedExisting,
   };
 }
@@ -495,5 +631,81 @@ export async function voidZohoInvoice(
     invoiceId: String(invoice.invoice_id),
     invoiceNumber: invoice.invoice_number ?? null,
     alreadyVoided: false,
+  };
+}
+
+export async function recordZohoInvoicePayment(
+  record: QuoteRecord,
+  input: {
+    amount: number;
+    date: string;
+    paymentMode: "cash" | "banktransfer" | "bankremittance" | "creditcard" | "check" | "others";
+    referenceNumber?: string;
+    description?: string;
+  },
+): Promise<RecordZohoPaymentResult> {
+  const config = getZohoConfig();
+  const accessToken = await getAccessToken(config);
+  const invoice = await findExistingInvoiceForQuote(config, accessToken, record);
+
+  if (!invoice) {
+    throw new Error(`No Zoho invoice found for quotation ${record.quote.quoteNo}.`);
+  }
+  if (invoice.status === "void") {
+    throw new Error(`Zoho invoice ${invoice.invoice_number ?? invoice.invoice_id} is voided.`);
+  }
+  if (!invoice.customer_id) {
+    throw new Error(`Zoho invoice ${invoice.invoice_number ?? invoice.invoice_id} is missing customer details.`);
+  }
+
+  const paymentPayload = {
+    customer_id: String(invoice.customer_id),
+    payment_mode: input.paymentMode,
+    amount: input.amount,
+    date: input.date,
+    reference_number: input.referenceNumber || undefined,
+    description:
+      input.description?.trim() || `Payment recorded for quotation ${record.quote.quoteNo}.`,
+    invoices: [
+      {
+        invoice_id: String(invoice.invoice_id),
+        amount_applied: input.amount,
+      },
+    ],
+  };
+
+  const paymentResponse = await zohoRequest(config, accessToken, "/customerpayments", {
+    method: "POST",
+    body: JSON.stringify(paymentPayload),
+  });
+
+  const payment = paymentResponse.payment as ZohoPayment | undefined;
+  if (!payment?.payment_id) {
+    throw new Error(`Zoho payment create returned no payment_id: ${JSON.stringify(paymentResponse)}`);
+  }
+
+  const refreshedInvoice = await getInvoiceById(
+    config,
+    accessToken,
+    String(invoice.invoice_id),
+  );
+  if (!refreshedInvoice) {
+    throw new Error(`Unable to refresh Zoho invoice ${invoice.invoice_number ?? invoice.invoice_id}.`);
+  }
+
+  await persistInvoiceReference(record.quote.id, refreshedInvoice);
+
+  return {
+    paymentId: String(payment.payment_id),
+    invoiceId: String(refreshedInvoice.invoice_id),
+    invoiceNumber: refreshedInvoice.invoice_number ?? null,
+    paidAmount: num(refreshedInvoice.payment_made),
+    balanceDue: num(refreshedInvoice.balance),
+    invoiceStatus:
+      refreshedInvoice.status === "void"
+        ? "void"
+        : refreshedInvoice.status === "paid"
+          ? "paid"
+          : "sent",
   };
 }

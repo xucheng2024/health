@@ -46,6 +46,8 @@ alter table public.quotes add column if not exists zoho_invoice_number text null
 alter table public.quotes add column if not exists zoho_invoice_url text null;
 alter table public.quotes add column if not exists zoho_invoice_sent_at timestamptz null;
 alter table public.quotes add column if not exists zoho_invoice_status text null;
+alter table public.quotes add column if not exists zoho_invoice_paid_amount numeric null;
+alter table public.quotes add column if not exists zoho_invoice_balance_due numeric null;
 
 -- ---------------------------------------------------------------------------
 -- quote_signatures

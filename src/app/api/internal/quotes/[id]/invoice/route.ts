@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/internal-auth";
 import { getQuoteRecordForAdmin } from "@/lib/quotes";
-import { createAndSendZohoInvoice, isZohoInvoiceConfigured } from "@/lib/zoho-invoice";
+import {
+  createAndSendZohoInvoice,
+  isZohoInvoiceConfigured,
+  previewZohoInvoice,
+} from "@/lib/zoho-invoice";
 
 export const dynamic = "force-dynamic";
 
 type InvoiceBody = {
-  test?: boolean;
+  preview?: boolean;
 };
-
-const TEST_INVOICE_EMAIL = "info@health-optix.com";
 
 export async function POST(
   request: Request,
@@ -37,15 +39,9 @@ export async function POST(
 
   try {
     const body = (await request.json().catch(() => ({}))) as InvoiceBody;
-    const result = await createAndSendZohoInvoice(
-      record,
-      body.test
-        ? {
-            toEmail: TEST_INVOICE_EMAIL,
-            cc: [],
-          }
-        : undefined,
-    );
+    const result = body.preview
+      ? await previewZohoInvoice(record)
+      : await createAndSendZohoInvoice(record);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error("createAndSendZohoInvoice failed", error);

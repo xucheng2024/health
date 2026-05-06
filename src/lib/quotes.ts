@@ -41,6 +41,8 @@ type QuoteRow = {
   zoho_invoice_url: string | null;
   zoho_invoice_sent_at: string | null;
   zoho_invoice_status: string | null;
+  zoho_invoice_paid_amount: string | number | null;
+  zoho_invoice_balance_due: string | number | null;
   signed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -81,7 +83,7 @@ function num(v: string | number): number {
 }
 
 function mapZohoInvoiceStatus(value: string | null): ZohoInvoiceStatus {
-  if (value === "sent" || value === "void") return value;
+  if (value === "draft" || value === "sent" || value === "paid" || value === "void") return value;
   return "none";
 }
 
@@ -117,6 +119,10 @@ function mapQuoteRow(row: QuoteRow): Quote {
     zohoInvoiceUrl: row.zoho_invoice_url,
     zohoInvoiceSentAt: row.zoho_invoice_sent_at,
     zohoInvoiceStatus: mapZohoInvoiceStatus(row.zoho_invoice_status),
+    zohoInvoicePaidAmount:
+      row.zoho_invoice_paid_amount === null ? null : num(row.zoho_invoice_paid_amount),
+    zohoInvoiceBalanceDue:
+      row.zoho_invoice_balance_due === null ? null : num(row.zoho_invoice_balance_due),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -216,6 +222,8 @@ export async function createQuoteRecord(
     | "zohoInvoiceUrl"
     | "zohoInvoiceSentAt"
     | "zohoInvoiceStatus"
+    | "zohoInvoicePaidAmount"
+    | "zohoInvoiceBalanceDue"
   > & { quoteValidUntil?: string | null; lineItems?: QuoteLineItem[] },
 ): Promise<QuoteRecord> {
   const supabase = getSupabaseServiceRole();
@@ -258,6 +266,8 @@ export async function createQuoteRecord(
     zoho_invoice_url: null,
     zoho_invoice_sent_at: null,
     zoho_invoice_status: null,
+    zoho_invoice_paid_amount: null,
+    zoho_invoice_balance_due: null,
     signed_at: null,
     created_at: now,
     updated_at: now,
@@ -499,6 +509,8 @@ export type AdminQuoteListItem = {
   signingToken: string;
   zohoInvoiceStatus: ZohoInvoiceStatus;
   zohoInvoiceNumber: string | null;
+  zohoInvoicePaidAmount: number | null;
+  zohoInvoiceBalanceDue: number | null;
 };
 
 function effectiveStatusForDisplay(
@@ -521,7 +533,7 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
   const { data, error } = await supabase
     .from("quotes")
     .select(
-      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, quote_valid_until, signing_token_expires_at, sent_at, created_at, signed_at, signing_token, zoho_invoice_status, zoho_invoice_number",
+      "id, quote_no, contact_name, company_name, contact_email, total, currency, status, quote_valid_until, signing_token_expires_at, sent_at, created_at, signed_at, signing_token, zoho_invoice_status, zoho_invoice_number, zoho_invoice_paid_amount, zoho_invoice_balance_due",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -551,6 +563,10 @@ export async function listQuotesForAdmin(): Promise<AdminQuoteListItem[]> {
     signingToken: r.signing_token as string,
     zohoInvoiceStatus: mapZohoInvoiceStatus((r.zoho_invoice_status as string | null) ?? null),
     zohoInvoiceNumber: (r.zoho_invoice_number as string | null) ?? null,
+    zohoInvoicePaidAmount:
+      r.zoho_invoice_paid_amount === null ? null : num(r.zoho_invoice_paid_amount as string | number),
+    zohoInvoiceBalanceDue:
+      r.zoho_invoice_balance_due === null ? null : num(r.zoho_invoice_balance_due as string | number),
   }));
 }
 
