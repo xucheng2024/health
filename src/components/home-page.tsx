@@ -493,7 +493,7 @@ export function HomePage() {
             </ListRow>
           </ul>
 
-          <p className="mt-12 text-center">
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="https://sgmyclinic.com/"
               target="_blank"
@@ -503,7 +503,16 @@ export function HomePage() {
               Explore MyClinic
               <ArrowSquareOut className="h-4 w-4 shrink-0" weight="bold" aria-hidden />
             </Link>
-          </p>
+            <Link
+              href="https://www.sgmystudio.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#003F73]/20 bg-[#003F73]/6 px-5 py-2.5 text-[16px] font-semibold text-[#003F73] transition-colors duration-200 hover:border-[#003F73]/40 hover:bg-[#003F73]/10 sm:text-[17px]"
+            >
+              Explore MyStudio
+              <ArrowSquareOut className="h-4 w-4 shrink-0" weight="bold" aria-hidden />
+            </Link>
+          </div>
         </section>
 
         {/* HealthTech — separate card from Health Systems */}
