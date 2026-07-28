@@ -60,6 +60,35 @@ export function SendInvoiceButton({
     }
   };
 
+  const sendInvoiceToAdministrator = async () => {
+    if (loading || loadingPreview || disabled) return;
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const res = await fetch(`/api/internal/quotes/${encodeURIComponent(quoteId)}/invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminOnly: true }),
+      });
+      const data = (await res.json()) as InvoiceResponse;
+      if (!res.ok) {
+        setError(data.error ?? "Unable to send invoice to administrator.");
+        return;
+      }
+
+      const invoiceLabel = data.invoiceNumber || data.invoiceId || "invoice";
+      const actionText = data.reusedExisting ? "re-sent" : "created and sent";
+      setMessage(`Zoho invoice ${invoiceLabel} ${actionText} to administrator ${data.sentTo}.`);
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const previewInvoice = async () => {
     if (loading || loadingPreview || disabled) return;
     setLoadingPreview(true);
@@ -105,6 +134,19 @@ export function SendInvoiceButton({
         className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-emerald-700/20 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 shadow-sm transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
       >
         {loading ? "Sending invoice..." : "Send invoice"}
+      </button>
+      <button
+        type="button"
+        onClick={() => void sendInvoiceToAdministrator()}
+        disabled={loading || loadingPreview || disabled}
+        title={
+          disabled
+            ? disabledReason ?? "Invoice cannot be sent."
+            : "Send the invoice only to the configured administrator email."
+        }
+        className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-violet-700/20 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        {loading ? "Sending invoice..." : "Send to administrator"}
       </button>
       {invoiceUrl ? (
         <a

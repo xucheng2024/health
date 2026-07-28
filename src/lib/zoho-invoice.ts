@@ -110,6 +110,11 @@ function getZohoConfig(): ZohoConfig {
   };
 }
 
+/** Email used for internal invoice notifications, if configured. */
+export function getZohoInvoiceAdminEmail(): string | null {
+  return getZohoConfig().adminEmail ?? null;
+}
+
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }

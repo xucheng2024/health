@@ -3,6 +3,7 @@ import { hasInternalAccessOrCookie, isInternalAuthConfigured } from "@/lib/inter
 import { getQuoteRecordForAdmin } from "@/lib/quotes";
 import {
   createAndSendZohoInvoice,
+  getZohoInvoiceAdminEmail,
   isZohoInvoiceConfigured,
   previewZohoInvoice,
 } from "@/lib/zoho-invoice";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 type InvoiceBody = {
   preview?: boolean;
+  adminOnly?: boolean;
 };
 
 export async function POST(
@@ -39,9 +41,30 @@ export async function POST(
 
   try {
     const body = (await request.json().catch(() => ({}))) as InvoiceBody;
+    if (body.adminOnly && body.preview) {
+      return NextResponse.json(
+        { error: "An invoice preview cannot be sent to the administrator." },
+        { status: 400 },
+      );
+    }
+
+    const adminEmail = body.adminOnly ? getZohoInvoiceAdminEmail() : null;
+    if (body.adminOnly && !adminEmail) {
+      return NextResponse.json(
+        {
+          error:
+            "Administrator email is not configured. Set ZOHO_INVOICE_ADMIN_EMAIL or INTERNAL_SALES_EMAIL.",
+        },
+        { status: 503 },
+      );
+    }
+
     const result = body.preview
       ? await previewZohoInvoice(record)
-      : await createAndSendZohoInvoice(record);
+      : await createAndSendZohoInvoice(
+          record,
+          adminEmail ? { toEmail: adminEmail, cc: [] } : undefined,
+        );
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error("invoice route failed", error);
