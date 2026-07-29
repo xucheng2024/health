@@ -12,6 +12,7 @@ type ZohoConfig = {
   adminEmail?: string;
   taxId?: string;
   paymentTerms?: number;
+  useManualInvoiceNumbers: boolean;
 };
 
 type ZohoContact = {
@@ -107,6 +108,7 @@ function getZohoConfig(): ZohoConfig {
       undefined,
     taxId: process.env.ZOHO_INVOICE_TAX_ID?.trim() || undefined,
     paymentTerms: Number.isFinite(paymentTerms) ? Math.max(0, Math.floor(paymentTerms)) : 0,
+    useManualInvoiceNumbers: process.env.ZOHO_INVOICE_MANUAL_NUMBER === "true",
   };
 }
 
@@ -339,42 +341,51 @@ async function createInvoice(
   contact: ZohoContact,
 ): Promise<ZohoInvoice> {
   const today = new Date();
+  const payload: Record<string, unknown> = {
+    customer_id: String(contact.contact_id),
+    contact_persons: contact.primary_contact_id ? [String(contact.primary_contact_id)] : undefined,
+    date: toIsoDate(today),
+    due_date: toIsoDate(addDays(today, config.paymentTerms ?? 0)),
+    payment_terms: config.paymentTerms ?? 0,
+    reference_number: record.quote.quoteNo,
+    currency_code: record.quote.currency,
+    line_items: invoiceLineItems(record, config),
+    notes: `Generated from HealthOptix quotation ${record.quote.quoteNo}.`,
+    terms: "Full payment must be made prior to system deployment unless otherwise agreed.",
+  };
+
+  if (record.quote.discount > 0) {
+    payload.discount = record.quote.discount;
+    payload.discount_type = "entity_level";
+    payload.is_discount_before_tax = true;
+  }
+
+  const submit = async (): Promise<ZohoInvoice> => {
+    const data = await zohoRequest(config, accessToken, "/invoices", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const invoice = data.invoice as ZohoInvoice | undefined;
+
+    if (!invoice?.invoice_id) {
+      throw new Error(`Zoho invoice create returned no invoice_id: ${JSON.stringify(data)}`);
+    }
+
+    return invoice;
+  };
+
+  if (!config.useManualInvoiceNumbers) {
+    return submit();
+  }
+
   const datePart = invoiceNumberDatePart(today);
   const nextSequence = await getNextInvoiceSequenceForDate(datePart);
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const payload: Record<string, unknown> = {
-      customer_id: String(contact.contact_id),
-      contact_persons: contact.primary_contact_id ? [String(contact.primary_contact_id)] : undefined,
-      date: toIsoDate(today),
-      due_date: toIsoDate(addDays(today, config.paymentTerms ?? 0)),
-      payment_terms: config.paymentTerms ?? 0,
-      invoice_number: buildInvoiceNumber(datePart, nextSequence + attempt),
-      reference_number: record.quote.quoteNo,
-      currency_code: record.quote.currency,
-      line_items: invoiceLineItems(record, config),
-      notes: `Generated from HealthOptix quotation ${record.quote.quoteNo}.`,
-      terms: "Full payment must be made prior to system deployment unless otherwise agreed.",
-    };
-
-    if (record.quote.discount > 0) {
-      payload.discount = record.quote.discount;
-      payload.discount_type = "entity_level";
-      payload.is_discount_before_tax = true;
-    }
+    payload.invoice_number = buildInvoiceNumber(datePart, nextSequence + attempt);
 
     try {
-      const data = await zohoRequest(config, accessToken, "/invoices", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      const invoice = data.invoice as ZohoInvoice | undefined;
-
-      if (!invoice?.invoice_id) {
-        throw new Error(`Zoho invoice create returned no invoice_id: ${JSON.stringify(data)}`);
-      }
-
-      return invoice;
+      return await submit();
     } catch (error) {
       if (isDuplicateInvoiceNumberError(error) && attempt < 9) {
         continue;

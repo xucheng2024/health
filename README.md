@@ -31,6 +31,7 @@ Optional:
 ZOHO_INVOICE_ADMIN_EMAIL=      # falls back to INTERNAL_SALES_EMAIL
 ZOHO_INVOICE_PAYMENT_TERMS_DAYS=0
 ZOHO_INVOICE_TAX_ID=           # only needed if quote tax should map to a Zoho tax
+ZOHO_INVOICE_MANUAL_NUMBER=false # default: let Zoho auto-generate invoice numbers
 ZOHO_ACCOUNTS_URL=https://accounts.zoho.com
 ZOHO_API_BASE_URL=https://www.zohoapis.com
 ```
