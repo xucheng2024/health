@@ -128,6 +128,49 @@ export async function sendQuoteSignedEmails(record: QuoteRecord): Promise<void> 
   }
 }
 
+/** Sends the signed-quotation notification to the internal administrator only. */
+export async function sendSignedQuoteEmailToInternal(record: QuoteRecord): Promise<string> {
+  const internalEmail = process.env.INTERNAL_SALES_EMAIL?.trim();
+  if (!internalEmail) {
+    throw new Error("Administrator email is not configured. Set INTERNAL_SALES_EMAIL.");
+  }
+
+  const plan = getPlanById(record.quote.planId);
+  const signedAt = record.quote.signedAt ?? record.quote.updatedAt;
+  const signedAtDisplay = formatSingaporeDateTime(signedAt);
+  const total = `${record.quote.currency} ${record.quote.total.toFixed(2)}`;
+  const signerName = record.signature?.signerName ?? record.quote.contactName;
+  const viewUrl = signingPageUrl(record.quote.signingToken);
+  const uenLine = customerUenIsProvided(record.quote.companyUen)
+    ? `<li>UEN: ${escapeHtml(record.quote.companyUen.trim())}</li>`
+    : "";
+  const internalHtml = `
+    <h2>Signed quotation</h2>
+    <ul>
+      <li>Company: ${escapeHtml(record.quote.companyName)}</li>
+      ${uenLine}
+      <li>Contact: ${escapeHtml(record.quote.contactName)}</li>
+      <li>Email: ${escapeHtml(record.quote.contactEmail)}</li>
+      <li>Plan: ${escapeHtml(plan?.name ?? record.quote.planId)}</li>
+      <li>Quotation No: ${escapeHtml(record.quote.quoteNo)}</li>
+      <li>Total: ${escapeHtml(total)}</li>
+      <li>Signer: ${escapeHtml(signerName)}</li>
+      <li>Signed At: ${escapeHtml(signedAtDisplay)} (Singapore time)</li>
+      <li>Quote ID: ${escapeHtml(record.quote.id)}</li>
+      <li>Signing page: <a href="${escapeHtml(viewUrl)}">${escapeHtml(viewUrl)}</a></li>
+      <li>Signed PDF: available from the signing page after opening the link above.</li>
+    </ul>
+  `;
+
+  await sendViaResend({
+    to: internalEmail,
+    subject: `Signed quotation — ${record.quote.quoteNo}`,
+    html: internalHtml,
+  });
+
+  return internalEmail;
+}
+
 export async function sendQuoteSigningLinkEmail(record: QuoteRecord): Promise<void> {
   const plan = getPlanById(record.quote.planId);
   const expiresAt = record.quote.signingTokenExpiresAt;

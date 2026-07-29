@@ -5,6 +5,7 @@ import { RecordPaymentButton } from "@/app/internal/quotes/record-payment-button
 import { ReissueInvoiceButton } from "@/app/internal/quotes/reissue-invoice-button";
 import { ResendButton } from "@/app/internal/quotes/resend-button";
 import { SendInvoiceButton } from "@/app/internal/quotes/send-invoice-button";
+import { SendSignedContractButton } from "@/app/internal/quotes/send-signed-contract-button";
 import { VoidInvoiceButton } from "@/app/internal/quotes/void-invoice-button";
 import { QuotationDocument } from "@/components/quotation/quotation-document";
 import { getPlanById } from "@/data/plans";
@@ -201,6 +202,7 @@ export default async function InternalQuoteDetailPage({
                     disabledReason="Signing link expired. Please resend first."
                   />
                   <ResendButton quoteId={q.id} />
+                  {q.status === "signed" ? <SendSignedContractButton quoteId={q.id} /> : null}
                 </div>
               </div>
 
